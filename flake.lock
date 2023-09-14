@@ -45,11 +45,11 @@
       },
       "locked": {
         "dir": "flake",
-        "lastModified": 1694699421,
-        "narHash": "sha256-t9qJIYu4BtFBrejcwSiLHLeyDVwlvM/bKhi87C7IW8k=",
+        "lastModified": 1694709068,
+        "narHash": "sha256-ju1/YrqCzniNcFFzpWe3fpE6PDh3wNlVBJCZCib6GbE=",
         "owner": "mfenniak",
         "repo": "custom-nixpkgs",
-        "rev": "35a0cd3259f94ea57057eb44ef000dad75f3f8fb",
+        "rev": "597b7aedf18fad63952a887bd4ef82d67fc8b518",
         "type": "github"
       },
       "original": {
