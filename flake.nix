@@ -20,7 +20,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in rec {
         overlays.default = self: super: {
-          rpiclock = packages.default.rpiclock;
+          rpiclock = packages.default;
         };
 
         packages.default = pkgs.${python}.pkgs.buildPythonApplication {
