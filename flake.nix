@@ -27,7 +27,7 @@
             (pkgs.${python}.withPackages
               (ps: with ps; [
                 (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
-                requests
+                aiohttp
               ]))
           ];
         };

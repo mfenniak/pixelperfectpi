@@ -1,41 +1,93 @@
 #!/usr/bin/env python
-# Display a runtext with double-buffering.
+
 from samplebase import SampleBase
 from rgbmatrix import graphics, font_path
 import time
-import requests
+import asyncio
+import aiohttp
 
 
-class RunText(SampleBase):
+class DataResolver(object):
+    def __init__(self, refresh_interval):
+        self.refresh_interval = refresh_interval
+        self.last_refresh = 0
+        self.lock = asyncio.Lock()
+
+    async def maybe_refresh(self, now):
+        delta = now - self.last_refresh
+        if delta > self.refresh_interval:
+            print("needs refresh")
+            try:
+                await asyncio.wait_for(self.lock.acquire(), timeout=0.0000001)
+                try:
+                    await self.refresh()
+                    self.last_refresh = now
+                finally:
+                    self.lock.release()
+            except TimeoutError:
+                print("TimeoutError")
+                pass
+
+    async def refresh(self):
+        try:
+            cr = self.do_collection()
+            self.data = await cr
+        except:
+            # FIXME: log error
+            print("do_collection error occurred")
+            self.data = None
+
+
+class PurpleAirDataResolver(DataResolver):
+    def __init__(self):
+        super().__init__(refresh_interval=60)
+
+    async def do_collection(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get('http://10.156.95.135/json') as response:
+                if response.status != 200:
+                    raise Exception(f"Unexpected status code: {response.status}")
+                purpleair = await response.json()
+                print("PurpleAirDataResolver.do_collection", purpleair)
+                return purpleair
+
+
+class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
-        super(RunText, self).__init__(*args, **kwargs)
-        self.parser.add_argument("-t", "--text", help="The text to scroll on the RGB LED panel", default="Hello world!")
+        super().__init__(*args, **kwargs)
+        self.purpleair = PurpleAirDataResolver()
+        self.data_resolvers = [
+            self.purpleair
+        ]
 
-    def run(self):
+    async def run(self):
+        background_tasks = set()
+
         offscreen_canvas = self.matrix.CreateFrameCanvas()
         font = graphics.Font()
         # print("font_path", font_path)
         font.LoadFont(font_path + "/7x13.bdf")
         textColor = graphics.Color(255, 255, 0)
         pos = offscreen_canvas.width
-        my_text = self.args.text
-
-        resp = requests.get('http://10.156.95.135/json')
-        if resp.status_code == 200:
-            purpleair = resp.json()
-            print("purpleair", repr(purpleair))
-        else:
-            print("purpleair", resp.status_code)
+        my_text = "Hello, world!"
 
         while True:
+            now = time.time()
+            for data_resolver in self.data_resolvers:
+                task = asyncio.create_task(data_resolver.maybe_refresh(now))
+                background_tasks.add(task)
+                task.add_done_callback(background_tasks.discard)
+
             offscreen_canvas.Clear()
-            len = graphics.DrawText(offscreen_canvas, font, pos, 10, textColor, my_text)
+            length = graphics.DrawText(offscreen_canvas, font, pos, 10, textColor, my_text)
             pos -= 1
-            if (pos + len < 0):
+            if (pos + length < 0):
                 pos = offscreen_canvas.width
 
-            time.sleep(0.05)
+            # time.sleep(0.05)
+            await asyncio.sleep(1)
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
+
 
 # http://10.156.95.135/json
 # {'SensorId': '...',
@@ -112,8 +164,6 @@ class RunText(SampleBase):
 
 # Main function
 if __name__ == "__main__":
-    run_text = RunText()
+    run_text = Clock()
     if (not run_text.process()):
         run_text.print_help()
-
-
