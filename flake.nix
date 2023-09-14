@@ -18,7 +18,21 @@
       let
         python = "python311";
         pkgs = nixpkgs.legacyPackages.${system};
-      in {
+      in rec {
+        overlays.default = self: super: {
+          rpiclock = packages.default.rpiclock;
+        };
+
+        packages.default = pkgs.${python}.pkgs.buildPythonApplication {
+          pname = "rpiclock";
+          version = "0.1";
+          src = ./.;
+          propagatedBuildInputs = [
+            (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
+            pkgs.${python}.pkgs.aiohttp
+          ];
+        };
+
         devShells.default = pkgs.mkShell {
           buildInputs = [
             # mfenniak.packages.${system}.lib-rpi-rgb-led-matrix

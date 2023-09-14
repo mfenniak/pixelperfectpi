@@ -3,8 +3,6 @@ import time
 import sys
 import os
 import asyncio
-
-sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/..'))
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 
