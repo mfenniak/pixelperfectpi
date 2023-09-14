@@ -30,6 +30,7 @@
           propagatedBuildInputs = [
             (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
             pkgs.${python}.pkgs.aiohttp
+            pkgs.${python}.pkgs.lxml
           ];
         };
 
@@ -42,6 +43,7 @@
               (ps: with ps; [
                 (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
                 aiohttp
+                lxml
               ]))
           ];
         };

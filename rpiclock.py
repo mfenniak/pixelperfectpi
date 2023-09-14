@@ -2,9 +2,11 @@
 
 from samplebase import SampleBase
 from rgbmatrix import graphics, font_path
+from lxml import etree
 import time
 import asyncio
 import aiohttp
+import traceback
 
 
 class DataResolver(object):
@@ -35,6 +37,7 @@ class DataResolver(object):
         except:
             # FIXME: log error
             print("do_collection error occurred")
+            traceback.print_exc()
             self.data = None
 
 
@@ -52,12 +55,46 @@ class PurpleAirDataResolver(DataResolver):
                 return purpleair
 
 
+class EnvironmentCanadaDataResolver(DataResolver):
+    def __init__(self):
+        super().__init__(refresh_interval=1800)
+
+    async def fetch_xml(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get('https://dd.weather.gc.ca/citypage_weather/xml/AB/s0000047_e.xml') as response:
+                if response.status != 200:
+                    raise Exception(f"Unexpected status code: {response.status}")
+                return await response.read()
+
+    async def do_collection(self):
+        xml_content = await self.fetch_xml()
+        root = etree.fromstring(xml_content)
+        elements = root.xpath("/siteData/forecastGroup/forecast")
+        # FIXME: handle missing/malformed data; no [0] without a good error
+        first_forecast = elements[0]
+        forecast_name = first_forecast.xpath("period[@textForecastName]")[0].values()[0] # "Today", "Tonight"
+        temperatures = first_forecast.xpath("temperatures/temperature")
+        first_temperature = temperatures[0]
+        # Future: precipitation, snowLevel, windChill, uv, wind?
+        data = {
+            "forecast": {
+                "name": forecast_name, # Today, Tonight
+                "type": first_temperature.get("class"), # high/low
+                "deg_c": float(first_temperature.text),
+            }
+        }
+        print("EnvironmentCanadaDataResolver.do_collection", repr(data))
+        return data
+
+
 class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.purpleair = PurpleAirDataResolver()
+        self.envcanada = EnvironmentCanadaDataResolver()
         self.data_resolvers = [
-            self.purpleair
+            self.purpleair,
+            self.envcanada,
         ]
 
     async def run(self):
