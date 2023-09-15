@@ -29,26 +29,24 @@
           src = ./.;
           propagatedBuildInputs = with pkgs.${python}.pkgs; [
             (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
-            (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
             aiohttp
             lxml
             icalendar
-          ];
+          ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python});
         };
 
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            # mfenniak.packages.${system}.lib-rpi-rgb-led-matrix
-            # python-librgbmatrix
-
             (pkgs.${python}.withPackages
-              (ps: with ps; [
-                (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
-                (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
-                aiohttp
-                lxml
-                icalendar
-              ]))
+              (ps: with ps;
+                [
+                  (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
+                  aiohttp
+                  lxml
+                  icalendar
+                ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
+              )
+            )
           ];
         };
       });
