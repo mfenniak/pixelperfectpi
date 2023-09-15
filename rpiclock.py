@@ -28,7 +28,6 @@ class DataResolver(object):
     async def maybe_refresh(self, now):
         delta = now - self.last_refresh
         if delta > self.refresh_interval:
-            print("needs refresh")
             try:
                 await asyncio.wait_for(self.lock.acquire(), timeout=0.0000001)
                 try:
@@ -37,7 +36,6 @@ class DataResolver(object):
                 finally:
                     self.lock.release()
             except TimeoutError:
-                print("TimeoutError")
                 pass
 
     async def refresh(self):
@@ -61,7 +59,15 @@ class PurpleAirDataResolver(DataResolver):
                 if response.status != 200:
                     raise Exception(f"Unexpected status code: {response.status}")
                 purpleair = await response.json()
-                print("PurpleAirDataResolver.do_collection", purpleair)
+                # print("PurpleAirDataResolver.do_collection", purpleair)
+
+                color = purpleair["p25aqic"] # rgb(87,237,0)
+                m = RGB_RE.match(color)
+                red, green, blue = int(m.group("red")), int(m.group("green")), int(m.group("blue")) 
+                purpleair["p25aqic"] = (red, green, blue)
+
+                purpleair["p25aqiavg"] = (purpleair['pm2.5_aqi'] + purpleair['pm2.5_aqi_b']) / 2
+
                 # {'SensorId': '...',
                 # 'p25aqic_b': 'rgb(55,234,0)'
                 # 'pm2.5_aqi_b': 30
@@ -133,7 +139,8 @@ class TimeComponent(DashboardComponent):
 
     def do_draw(self, now):
         # self.fill(graphics.Color(255, 255, 255))
-        hue = int(now % 360)
+        hue = int(now*50 % 360)
+        # print("hue", hue)
         red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
         color = graphics.Color(red, green, blue)
         timestr = time.strftime("%I:%M")
@@ -155,12 +162,29 @@ class AqiComponent(DashboardComponent):
         # self.fill(graphics.Color(255, 0, 255))
         pa = self.purpleair.data
         if pa:
-            color = pa["p25aqic"] # rgb(87,237,0)
-            m = RGB_RE.match(color) # FIXME: cache this; the data in PA doesn't change as frequently as the clock is rendered
-            red, blue, green = int(m.group("red")), int(m.group("blue")), int(m.group("green")) 
+            (red, green, blue) = pa["p25aqic"]
             textColor = graphics.Color(red, green, blue)
-            aqi = (pa['pm2.5_aqi'] + pa['pm2.5_aqi_b']) / 2
+            aqi = pa['p25aqiavg']
             self.draw_text(self.font, 8, 0, textColor, f"AQI {aqi:>3.0f}")
+
+
+# TODO List:
+# - Create a "measure text" function, center text
+# - Add icons - like a lightning bolt for power, or, sun^ sunv for high and low?
+# - Animations - don't know where, when, but let's use all the pixels sometimes
+# New data:
+# - Weather Forecast: Upcoming High/Low
+# - Weather Forecast: Upcoming Rain
+# - Date w/ time -- eg. "Tue 6:53"
+# - Times: Sunrise, Sunset
+# - Calendar - pull upcoming events in the next 1-3d, use super small font to draw
+# - Power: Usage, Solar Generation
+# - Home Assistant: Back door / Garage door / etc. Open
+# - Google Location: Distance to Mathieu?
+# - Home Assistant: Presence
+# - Countdown - France Flag & # days to France
+# - Errors from any of the other data collectors / displayers
+# - anxi - Any errors on Prometheus?
 
 
 class Clock(SampleBase):
@@ -197,7 +221,7 @@ class Clock(SampleBase):
             aqi_component.draw(offscreen_canvas, now)
 
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
 
 
 # http://10.156.95.135/json
