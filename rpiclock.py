@@ -214,6 +214,7 @@ class AqiComponent(DashboardComponent):
 # - Create a "measure text" function, center text
 # - Add icons - like a lightning bolt for power, or, sun^ sunv for high and low?
 # - Animations - don't know where, when, but let's use all the pixels sometimes
+# - Jitter the data loader times -- if two things are both 1800s, don't want them to occur at the same time
 # New data:
 # - Weather Forecast: Upcoming High/Low
 # - Weather Forecast: Upcoming Rain
