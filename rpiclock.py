@@ -14,6 +14,9 @@ import asyncio
 import aiohttp
 import traceback
 import re
+import config
+import icalendar
+import datetime
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -109,6 +112,45 @@ class EnvironmentCanadaDataResolver(DataResolver):
         return data
 
 
+class CalendarDataResolver(DataResolver):
+    def __init__(self):
+        super().__init__(refresh_interval=1800)
+
+    async def fetch_ical(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(config.ICAL_URL) as response:
+                if response.status != 200:
+                    raise Exception(f"Unexpected status code: {response.status}")
+                return await response.read()
+
+    async def do_collection(self):
+        ical_content = await self.fetch_ical()
+        calendar = icalendar.Calendar.from_ical(ical_content)
+        future_events = []
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        today = datetime.date.today()
+
+        for event in calendar.walk('VEVENT'):
+            dtstart = event.get("dtstart").dt
+            if isinstance(dtstart, datetime.datetime):
+                if dtstart > now:
+                    print(event.get("SUMMARY"))
+                    print("datetime", dtstart)
+                    future_events.append(event)
+            elif isinstance(dtstart, datetime.date):
+                if dtstart >= today:
+                    print("date", dtstart)
+                    future_events.append(event)
+            else:
+                print("unexpected dt type", repr(dtstart))
+            #     event.get("dtstart"),
+            #     event.get("dtend"),
+            #     event.get("dtstamp"),
+            # )
+        return []
+
+
 class DashboardComponent(object):
     def __init__(self, x, y, w, h):
         self.x = x
@@ -192,9 +234,11 @@ class Clock(SampleBase):
         super().__init__(*args, **kwargs)
         self.purpleair = PurpleAirDataResolver()
         self.envcanada = EnvironmentCanadaDataResolver()
+        self.calendar = CalendarDataResolver()
         self.data_resolvers = [
             self.purpleair,
             self.envcanada,
+            self.calendar,
         ]
 
     async def run(self):

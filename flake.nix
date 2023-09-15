@@ -27,11 +27,12 @@
           pname = "rpiclock";
           version = "0.1";
           src = ./.;
-          propagatedBuildInputs = [
+          propagatedBuildInputs = with pkgs.${python}.pkgs; [
             (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
             (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
-            pkgs.${python}.pkgs.aiohttp
-            pkgs.${python}.pkgs.lxml
+            aiohttp
+            lxml
+            icalendar
           ];
         };
 
@@ -46,6 +47,7 @@
                 (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
                 aiohttp
                 lxml
+                icalendar
               ]))
           ];
         };
