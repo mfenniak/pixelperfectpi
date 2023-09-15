@@ -8,6 +8,7 @@ else:
     from rgbmatrix import graphics
 from rgbmatrix import font_path
 from lxml import etree
+from PIL.ImageColor import getrgb
 import time
 import asyncio
 import aiohttp
@@ -102,6 +103,66 @@ class EnvironmentCanadaDataResolver(DataResolver):
         return data
 
 
+class DashboardComponent(object):
+    def __init__(self, x, y, w, h):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+
+    def draw(self, canvas, now):
+        self.canvas = canvas
+        self.do_draw(now)
+        self.canvas = None
+
+    def fill(self, color):
+        for x in range(self.x, self.x + self.w):
+            for y in range(self.y, self.y + self.h):
+                self.canvas.SetPixel(x, y, color.red, color.green, color.blue)
+
+    def draw_text(self, font, x, y, color, text):
+        # FIXME: width/height limits not implemented
+        graphics.DrawText(self.canvas, font, self.x + x, self.y + y + font.height - (font.height - font.baseline), color, text)
+
+
+class TimeComponent(DashboardComponent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.font = graphics.Font()
+        self.font.LoadFont(font_path + "/7x13.bdf")
+
+    def do_draw(self, now):
+        # self.fill(graphics.Color(255, 255, 255))
+        hue = int(now % 360)
+        red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
+        color = graphics.Color(red, green, blue)
+        timestr = time.strftime("%I:%M")
+        if timestr[0] == "0":
+            timestr = " " + timestr[1:]
+        if int(now % 2) == 0:
+            timestr = timestr.replace(":", " ")
+        self.draw_text(self.font, 0, 0, color, timestr)
+
+
+class AqiComponent(DashboardComponent):
+    def __init__(self, purpleair, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.purpleair = purpleair
+        self.font = graphics.Font()
+        self.font.LoadFont(font_path + "/7x13.bdf")
+
+    def do_draw(self, now):
+        # self.fill(graphics.Color(255, 0, 255))
+        pa = self.purpleair.data
+        if pa:
+            color = pa["p25aqic"] # rgb(87,237,0)
+            m = RGB_RE.match(color) # FIXME: cache this; the data in PA doesn't change as frequently as the clock is rendered
+            red, blue, green = int(m.group("red")), int(m.group("blue")), int(m.group("green")) 
+            textColor = graphics.Color(red, green, blue)
+            aqi = (pa['pm2.5_aqi'] + pa['pm2.5_aqi_b']) / 2
+            self.draw_text(self.font, 8, 0, textColor, f"AQI {aqi:>3.0f}")
+
+
 class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -119,6 +180,10 @@ class Clock(SampleBase):
         font = graphics.Font()
         font.LoadFont(font_path + "/7x13.bdf")
 
+        time_component = TimeComponent(29, 0, 35, 13)
+        aqi_component = AqiComponent(self.purpleair, 0, 16, 64, 16) # 0, 32, 64, 32)
+        # hue = 0
+
         while True:
             now = time.time()
             for data_resolver in self.data_resolvers:
@@ -128,25 +193,11 @@ class Clock(SampleBase):
 
             offscreen_canvas.Clear()
 
-            textColor = graphics.Color(255, 255, 0)
-            timestr = time.strftime("%I:%M")
-            if timestr[0] == "0":
-                timestr = " " + timestr[1:]
-            length = graphics.DrawText(offscreen_canvas, font, 64 - (7 * 5), 10, textColor, timestr)
+            time_component.draw(offscreen_canvas, now)
+            aqi_component.draw(offscreen_canvas, now)
 
-            pa = self.purpleair.data
-            if pa:
-                color = pa["p25aqic"] # rgb(87,237,0)
-                m = RGB_RE.match(color)
-                red, blue, green = int(m.group("red")), int(m.group("blue")), int(m.group("green")) 
-                textColor = graphics.Color(red, green, blue)
-                aqi = (pa['pm2.5_aqi'] + pa['pm2.5_aqi_b']) / 2
-                graphics.DrawText(offscreen_canvas, font, 30 - 7 - 7 - 7, 30, textColor, "AQI")
-                graphics.DrawText(offscreen_canvas, font, 35, 30, textColor, f"{aqi:>3.0f}")
-
-            # time.sleep(0.05)
-            await asyncio.sleep(1)
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
+            await asyncio.sleep(0.5)
 
 
 # http://10.156.95.135/json
