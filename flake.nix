@@ -7,8 +7,8 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     mfenniak = {
-      # url = "github:mfenniak/custom-nixpkgs?dir=flake";
-      url = "/home/mfenniak/Dev/custom-nixpkgs/flake";
+      url = "github:mfenniak/custom-nixpkgs?dir=flake";
+      # url = "/home/mfenniak/Dev/custom-nixpkgs/flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
