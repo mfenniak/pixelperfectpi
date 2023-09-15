@@ -1,9 +1,20 @@
+cpuinfo = open("/proc/cpuinfo").read()
+if "Raspberry Pi" in cpuinfo:
+    EMULATED = False
+else:
+    EMULATED = True
+    print("Emulating RGB matrix...")
+
 import argparse
 import time
 import sys
 import os
 import asyncio
-from rgbmatrix import RGBMatrix, RGBMatrixOptions
+
+if EMULATED:
+    from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
+else:
+    from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 
 class SampleBase(object):
@@ -72,6 +83,9 @@ class SampleBase(object):
         try:
             # Start loop
             print("Press CTRL-C to stop sample")
+            # if EMULATED:
+            #     self.task = asyncio.create_task(self.run())
+            # else:
             asyncio.run(self.run())
             # self.run()
         except KeyboardInterrupt:

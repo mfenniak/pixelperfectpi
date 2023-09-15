@@ -7,8 +7,8 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     mfenniak = {
-      url = "github:mfenniak/custom-nixpkgs?dir=flake";
-      # url = "/home/mfenniak/Dev/custom-nixpkgs/flake";
+      # url = "github:mfenniak/custom-nixpkgs?dir=flake";
+      url = "/home/mfenniak/Dev/custom-nixpkgs/flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -29,6 +29,7 @@
           src = ./.;
           propagatedBuildInputs = [
             (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
+            (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
             pkgs.${python}.pkgs.aiohttp
             pkgs.${python}.pkgs.lxml
           ];
@@ -42,6 +43,7 @@
             (pkgs.${python}.withPackages
               (ps: with ps; [
                 (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
+                (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
                 aiohttp
                 lxml
               ]))

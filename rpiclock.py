@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 
-from samplebase import SampleBase
-from rgbmatrix import graphics, font_path
+from samplebase import SampleBase, EMULATED
+
+if EMULATED:
+    from RGBMatrixEmulator import graphics
+else:
+    from rgbmatrix import graphics
+from rgbmatrix import font_path
 from lxml import etree
 import time
 import asyncio
 import aiohttp
 import traceback
+import re
+
+RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
 
 class DataResolver(object):
@@ -14,6 +22,7 @@ class DataResolver(object):
         self.refresh_interval = refresh_interval
         self.last_refresh = 0
         self.lock = asyncio.Lock()
+        self.data = None
 
     async def maybe_refresh(self, now):
         delta = now - self.last_refresh
@@ -52,6 +61,12 @@ class PurpleAirDataResolver(DataResolver):
                     raise Exception(f"Unexpected status code: {response.status}")
                 purpleair = await response.json()
                 print("PurpleAirDataResolver.do_collection", purpleair)
+                # {'SensorId': '...',
+                # 'p25aqic_b': 'rgb(55,234,0)'
+                # 'pm2.5_aqi_b': 30
+                # 'pm2.5_aqi': 35, 
+                # 'p25aqic': 'rgb(87,237,0)', 
+                # 'current_temp_f': 62, 
                 return purpleair
 
 
@@ -102,11 +117,7 @@ class Clock(SampleBase):
 
         offscreen_canvas = self.matrix.CreateFrameCanvas()
         font = graphics.Font()
-        # print("font_path", font_path)
         font.LoadFont(font_path + "/7x13.bdf")
-        textColor = graphics.Color(255, 255, 0)
-        pos = offscreen_canvas.width
-        my_text = "Hello, world!"
 
         while True:
             now = time.time()
@@ -116,10 +127,22 @@ class Clock(SampleBase):
                 task.add_done_callback(background_tasks.discard)
 
             offscreen_canvas.Clear()
-            length = graphics.DrawText(offscreen_canvas, font, pos, 10, textColor, my_text)
-            pos -= 1
-            if (pos + length < 0):
-                pos = offscreen_canvas.width
+
+            textColor = graphics.Color(255, 255, 0)
+            timestr = time.strftime("%I:%M")
+            if timestr[0] == "0":
+                timestr = " " + timestr[1:]
+            length = graphics.DrawText(offscreen_canvas, font, 64 - (7 * 5), 10, textColor, timestr)
+
+            pa = self.purpleair.data
+            if pa:
+                color = pa["p25aqic"] # rgb(87,237,0)
+                m = RGB_RE.match(color)
+                red, blue, green = int(m.group("red")), int(m.group("blue")), int(m.group("green")) 
+                textColor = graphics.Color(red, green, blue)
+                aqi = (pa['pm2.5_aqi'] + pa['pm2.5_aqi_b']) / 2
+                graphics.DrawText(offscreen_canvas, font, 30 - 7 - 7 - 7, 30, textColor, "AQI")
+                graphics.DrawText(offscreen_canvas, font, 35, 30, textColor, f"{aqi:>3.0f}")
 
             # time.sleep(0.05)
             await asyncio.sleep(1)
