@@ -12,7 +12,7 @@ import os
 import asyncio
 try:
     import config
-except ImportError:
+except ModuleNotFoundError:
     config = object()
 
 if EMULATED:
