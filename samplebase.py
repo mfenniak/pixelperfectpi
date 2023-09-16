@@ -90,6 +90,7 @@ class SampleBase(object):
         try:
             # Start loop
             print("Press CTRL-C to stop sample")
+            self.pre_run()
             asyncio.run(self.run())
         except KeyboardInterrupt:
             print("Exiting\n")

@@ -14,7 +14,6 @@ import asyncio
 import aiohttp
 import traceback
 import re
-import config
 import icalendar
 import datetime
 
@@ -113,12 +112,13 @@ class EnvironmentCanadaDataResolver(DataResolver):
 
 
 class CalendarDataResolver(DataResolver):
-    def __init__(self):
+    def __init__(self, ical_url):
         super().__init__(refresh_interval=1800)
+        self.ical_url = ical_url
 
     async def fetch_ical(self):
         async with aiohttp.ClientSession() as session:
-            async with session.get(config.ICAL_URL) as response:
+            async with session.get(self.ical_url) as response:
                 if response.status != 200:
                     raise Exception(f"Unexpected status code: {response.status}")
                 return await response.read()
@@ -233,9 +233,11 @@ class AqiComponent(DashboardComponent):
 class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
         self.envcanada = EnvironmentCanadaDataResolver()
-        self.calendar = CalendarDataResolver()
+        self.calendar = CalendarDataResolver(self.ical_url)
         self.data_resolvers = [
             self.purpleair,
             self.envcanada,
