@@ -10,6 +10,10 @@ import time
 import sys
 import os
 import asyncio
+try:
+    import config
+except ImportError:
+    config = object()
 
 if EMULATED:
     from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
@@ -39,7 +43,10 @@ class SampleBase(object):
         self.parser.add_argument("--led-multiplexing", action="store", help="Multiplexing type: 0=direct; 1=strip; 2=checker; 3=spiral; 4=ZStripe; 5=ZnMirrorZStripe; 6=coreman; 7=Kaler2Scan; 8=ZStripeUneven... (Default: 0)", default=0, type=int)
         self.parser.add_argument("--led-panel-type", action="store", help="Needed to initialize special panels. Supported: 'FM6126A'", default="", type=str)
         self.parser.add_argument("--led-no-drop-privs", dest="drop_privileges", help="Don't drop privileges from 'root' after initializing the hardware.", action='store_false')
+        self.parser.add_argument("--ical-url", dest="ical_url", help="iCal URL", default=None, type=str)
         self.parser.set_defaults(drop_privileges=True)
+
+    ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
 
     def usleep(self, value):
         time.sleep(value / 1000000.0)
@@ -54,8 +61,8 @@ class SampleBase(object):
 
         if self.args.led_gpio_mapping != None:
             options.hardware_mapping = self.args.led_gpio_mapping
-        options.rows = self.args.led_rows
-        options.cols = self.args.led_cols
+        options.rows = getattr(config, 'LED_ROWS', self.args.led_rows)
+        options.cols = getattr(config, 'LED_COLS', self.args.led_cols)
         options.chain_length = self.args.led_chain
         options.parallel = self.args.led_parallel
         options.row_address_type = self.args.led_row_addr_type
@@ -67,12 +74,12 @@ class SampleBase(object):
         options.pixel_mapper_config = self.args.led_pixel_mapper
         options.panel_type = self.args.led_panel_type
 
-
         if self.args.led_show_refresh:
             options.show_refresh_rate = 1
 
-        if self.args.led_slowdown_gpio != None:
-            options.gpio_slowdown = self.args.led_slowdown_gpio
+        led_slowdown_gpio = getattr(config, 'LED_SLOWDOWN_GPIO', self.args.led_slowdown_gpio)
+        if led_slowdown_gpio != None:
+            options.gpio_slowdown = led_slowdown_gpio
         if self.args.led_no_hardware_pulse:
             options.disable_hardware_pulsing = True
         if not self.args.drop_privileges:
@@ -83,11 +90,7 @@ class SampleBase(object):
         try:
             # Start loop
             print("Press CTRL-C to stop sample")
-            # if EMULATED:
-            #     self.task = asyncio.create_task(self.run())
-            # else:
             asyncio.run(self.run())
-            # self.run()
         except KeyboardInterrupt:
             print("Exiting\n")
             sys.exit(0)
