@@ -16,6 +16,8 @@ import traceback
 import re
 import icalendar
 import datetime
+import pytz
+
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -128,27 +130,30 @@ class CalendarDataResolver(DataResolver):
         calendar = icalendar.Calendar.from_ical(ical_content)
         future_events = []
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(pytz.utc) # datetime.timezone.utc)
+        target_tz = pytz.timezone("America/Edmonton")
         today = datetime.date.today()
 
         for event in calendar.walk('VEVENT'):
             dtstart = event.get("dtstart").dt
             if isinstance(dtstart, datetime.datetime):
                 if dtstart > now:
-                    print(event.get("SUMMARY"))
-                    print("datetime", dtstart)
-                    future_events.append(event)
+                    future_events.append((dtstart.astimezone(target_tz), str(event.get("SUMMARY"))))
             elif isinstance(dtstart, datetime.date):
                 if dtstart >= today:
-                    print("date", dtstart)
-                    future_events.append(event)
+                    start = datetime.datetime.combine(dtstart, datetime.time()).astimezone(target_tz)
+                    future_events.append((start, str(event.get("SUMMARY"))))
             else:
                 print("unexpected dt type", repr(dtstart))
-            #     event.get("dtstart"),
-            #     event.get("dtend"),
-            #     event.get("dtstamp"),
-            # )
-        return []
+
+        future_cutoff = now + datetime.timedelta(days=7)
+        near_future_events = [x for x in future_events if x[0] < future_cutoff]
+        near_future_events = sorted(near_future_events, key=lambda event: event[0])
+        print("near_future_events", near_future_events)
+
+        return {
+            "future_events": near_future_events
+        }
 
 
 class DashboardComponent(object):
@@ -170,7 +175,7 @@ class DashboardComponent(object):
 
     def draw_text(self, font, x, y, color, text):
         # FIXME: width/height limits not implemented
-        graphics.DrawText(self.canvas, font, self.x + x, self.y + y + font.height - (font.height - font.baseline), color, text)
+        return graphics.DrawText(self.canvas, font, self.x + x, self.y + y + font.height - (font.height - font.baseline), color, text)
 
 
 class TimeComponent(DashboardComponent):
@@ -208,6 +213,61 @@ class AqiComponent(DashboardComponent):
             textColor = graphics.Color(red, green, blue)
             aqi = pa['p25aqiavg']
             self.draw_text(self.font, 8, 0, textColor, f"AQI {aqi:>3.0f}")
+
+
+class CalendarComponent(DashboardComponent):
+    def __init__(self, calendar, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.calendar = calendar
+        self.font = graphics.Font()
+        self.font.LoadFont(font_path + "/4x6.bdf")
+
+        # FIXME: make a component able to opt-out of being drawn if it has no data, rather than being blank
+
+    def do_draw(self, now):
+        # self.fill(graphics.Color(255, 0, 255))
+
+        if self.calendar.data is None:
+            return
+
+        (dt, summary) = self.calendar.data["future_events"][0]
+
+        preamble = ""
+        target_tz = pytz.timezone("America/Edmonton")
+        now = datetime.datetime.now(target_tz)
+
+        # print("now", now)
+        # print("now.date", now.date())
+        # print("dt", dt)
+        # print("dt.date", dt.date())
+        # print("tom.date", (now + datetime.timedelta(days=1)).date())
+
+        if dt.date() == now.date():
+            preamble = dt.strftime("%-I%p")
+        elif dt.date() == (now + datetime.timedelta(days=1)).date():
+            preamble = dt.strftime("Tom %-I%p")
+        elif (dt - now) < datetime.timedelta(days=7):
+            preamble = dt.strftime("%a %-I%p")
+        else:
+            preamble = dt.strftime("%a %-d")
+
+        if preamble.endswith("M"): # PM/AM -> P/A; no strftime option for that
+            preamble = preamble[:-1]
+
+        textColor = graphics.Color(255, 0, 0)
+        text = f"{preamble}: {summary}"
+
+        x = 0
+        y = 0
+        for c in text:
+            width = self.draw_text(self.font, x, y, textColor, c.encode("ascii", errors="ignore").decode("ascii"))
+            x += (width or 0)
+            if x > self.w:
+                y += self.font.height
+                x = 0
+                # redraw character that was at least partially off-screen..
+                width = self.draw_text(self.font, x, y, textColor, c.encode("ascii", errors="ignore").decode("ascii"))
+                x += (width or 0)
 
 
 # TODO List:
@@ -252,7 +312,12 @@ class Clock(SampleBase):
         font.LoadFont(font_path + "/7x13.bdf")
 
         time_component = TimeComponent(29, 0, 35, 13)
-        aqi_component = AqiComponent(self.purpleair, 0, 16, 64, 16) # 0, 32, 64, 32)
+
+        lower_panels = [
+            AqiComponent(self.purpleair, 0, 13, 64, 19),
+            CalendarComponent(self.calendar, 0, 13, 64, 19),
+        ]
+        # aqi_component =  # 0, 32, 64, 32)
         # hue = 0
 
         while True:
@@ -265,7 +330,12 @@ class Clock(SampleBase):
             offscreen_canvas.Clear()
 
             time_component.draw(offscreen_canvas, now)
-            aqi_component.draw(offscreen_canvas, now)
+            
+            time_per_panel = 5
+            lower_panels[int(now / time_per_panel) % len(lower_panels)].draw(offscreen_canvas, now)
+
+
+            # aqi_component.draw(offscreen_canvas, now)
 
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
             await asyncio.sleep(0.1)

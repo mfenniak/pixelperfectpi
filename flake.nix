@@ -32,6 +32,7 @@
             aiohttp
             lxml
             icalendar
+            pytz
           ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python});
         };
 
@@ -44,6 +45,7 @@
                   aiohttp
                   lxml
                   icalendar
+                  pytz
                 ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
               )
             )
