@@ -33,6 +33,7 @@
             lxml
             icalendar
             pytz
+            recurring-ical-events
           ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python});
         };
 
@@ -46,6 +47,7 @@
                   lxml
                   icalendar
                   pytz
+                  recurring-ical-events
                 ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
               )
             )

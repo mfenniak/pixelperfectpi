@@ -18,6 +18,7 @@ import icalendar
 import datetime
 import pytz
 import random
+import recurring_ical_events
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -116,7 +117,6 @@ class EnvironmentCanadaDataResolver(DataResolver):
                 "deg_c": float(first_temperature.text),
             }
         }
-        print("EnvironmentCanadaDataResolver.do_collection", repr(data))
         return data
 
 
@@ -141,7 +141,10 @@ class CalendarDataResolver(DataResolver):
         target_tz = pytz.timezone("America/Edmonton")
         today = datetime.date.today()
 
-        for event in calendar.walk('VEVENT'):
+        start_date = now
+        end_date = now + datetime.timedelta(days=14)
+        events = recurring_ical_events.of(calendar).between(start_date, end_date)
+        for event in events:
             dtstart = event.get("dtstart").dt
             if isinstance(dtstart, datetime.datetime):
                 if dtstart > now:
@@ -368,14 +371,26 @@ class CalendarComponent(DashboardComponent):
         target_tz = pytz.timezone("America/Edmonton")
         now = datetime.datetime.now(target_tz)
 
-        if dt.date() == now.date():
-            preamble = dt.strftime("%-I%p")
-        elif dt.date() == (now + datetime.timedelta(days=1)).date():
-            preamble = dt.strftime("tmw %-I%p")
-        elif (dt - now) < datetime.timedelta(days=7):
-            preamble = dt.strftime("%a %-I%p")
+        if dt.time() == datetime.time(0,0,0):
+            # full day event probably
+            if dt.date() == now.date():
+                preamble = "tdy"
+            elif dt.date() == (now + datetime.timedelta(days=1)).date():
+                preamble = dt.strftime("tmw")
+            elif (dt - now) < datetime.timedelta(days=7):
+                preamble = dt.strftime("%a")
+            else:
+                preamble = dt.strftime("%a %-d")
         else:
-            preamble = dt.strftime("%a %-d")
+            # timed event
+            if dt.date() == now.date():
+                preamble = dt.strftime("%-I%p")
+            elif dt.date() == (now + datetime.timedelta(days=1)).date():
+                preamble = dt.strftime("tmw %-I%p")
+            elif (dt - now) < datetime.timedelta(days=7):
+                preamble = dt.strftime("%a %-I%p")
+            else:
+                preamble = dt.strftime("%a %-d")
 
         if preamble.endswith("M"): # PM/AM -> P/A; no strftime option for that
             preamble = preamble[:-1]
