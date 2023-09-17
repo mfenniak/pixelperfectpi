@@ -8,8 +8,7 @@ else:
     from rgbmatrix import graphics
 from rgbmatrix import font_path
 from lxml import etree
-from PIL.ImageColor import getrgb # FIXME: change to just ImageColor import
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageColor
 import time
 import asyncio
 import aiohttp
@@ -280,7 +279,7 @@ class TimeComponent(DashboardComponent):
         self.fill((0, 0, 0))
 
         hue = int(now*50 % 360)
-        red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
+        red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
         color = (red, green, blue)
 
         timestr = time.strftime("%I:%M")
@@ -346,7 +345,7 @@ class CalendarComponent(DashboardComponent):
 
         # FIXME: color is synced to the time, but, only by copy-and-paste
         hue = int(now*50 % 360)
-        red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
+        red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
         textColor = (red, green, blue)
 
         (dt, summary) = data["future_events"][frame]
