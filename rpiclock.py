@@ -18,6 +18,7 @@ import re
 import icalendar
 import datetime
 import pytz
+import math
 # import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 
 
@@ -211,12 +212,15 @@ class DashboardComponent(object):
         text_words = text.split(" ")
         line = ""
         height_total = 0
+        widest_line = 0
         while True:
             if len(text_words) == 0:
                 # Ran out of words.
                 if line != "":
                     height_total += bottom
                     lines.append(line)
+                    (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), line, font=self.pil_font, spacing=0, align="left")
+                    widest_line = max(widest_line, right)
                 break
 
             next_word = text_words[0]
@@ -232,11 +236,13 @@ class DashboardComponent(object):
                 # no, proposed_line is too big; we'll make do with the last `line`
                 if line != "":
                     lines.append(line)
+                    (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), line, font=self.pil_font, spacing=0, align="left")
+                    widest_line = max(widest_line, right)
                     line = ""
                     # leave next_word in text_words and keep going
                 else:
                     # next_word by itself won't fit on a line; well, we can't skip the middle of a sentence so we'll
-                    # just consume it regardless as it's own line
+                    # just consume it regardless as it's own line.  Ignore it for widest_line calc.
                     lines.append(next_word)
                     text_words = text_words[1:]
             else:
@@ -244,9 +250,24 @@ class DashboardComponent(object):
                 line = proposed_line
                 text_words = text_words[1:]
 
-        print("Determined lines...")
-        for line in lines:
-            print("\t", line)
+        new_text = "\n".join(lines)
+
+        text_height = height_total
+        if valign == "top":
+            text_y = 0
+        elif valign == "bottom":
+            text_y = max(0, self.h - bottom)
+        else: # middle
+            text_y = max(0, (self.h - text_height) // 2)
+        text_width = widest_line
+        if halign == "left":
+            text_x = 0
+        elif halign == "right":
+            text_x = max(0, self.w - text_width)
+        else: # center
+            text_x = max(0, (self.w - text_width) // 2)
+
+        self.imagedraw.multiline_text((text_x, text_y), new_text, fill=color, font=self.pil_font, spacing=0, align=halign)
 
 
 class TimeComponent(DashboardComponent):
@@ -283,30 +304,26 @@ class AqiComponent(DashboardComponent):
             textColor = (red, green, blue)
             aqi = pa['p25aqiavg']
             self.draw_text(textColor, f"AQI {aqi:.0f}")
-            # self.draw_text(textColor, "This is a long multi line long super word sentence and we'll have to see how the new splitting algorithm works")
 
 
 class CalendarComponent(DashboardComponent):
     def __init__(self, calendar, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.calendar = calendar
-        # self.font = graphics.Font()
-        # self.font.LoadFont(font_path + "/4x6.bdf")
         self.load_font("4x6")
+        # self.load_font("tom-thumb")
         # FIXME: make a component able to opt-out of being drawn if it has no data, rather than being blank
 
     def do_draw(self, now):
         self.fill((0, 0, 16))
-        # self.fill(graphics.Color(255, 0, 255))
 
         if self.calendar.data is None:
             return
 
-        # FIXME: synced to the time, but, only by copy-and-paste
+        # FIXME: color is synced to the time, but, only by copy-and-paste
         hue = int(now*50 % 360)
-        # print("hue", hue)
         red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
-        textColor = graphics.Color(red, green, blue)
+        textColor = (red, green, blue)
 
         (dt, summary) = self.calendar.data["future_events"][0]
 
@@ -314,16 +331,10 @@ class CalendarComponent(DashboardComponent):
         target_tz = pytz.timezone("America/Edmonton")
         now = datetime.datetime.now(target_tz)
 
-        # print("now", now)
-        # print("now.date", now.date())
-        # print("dt", dt)
-        # print("dt.date", dt.date())
-        # print("tom.date", (now + datetime.timedelta(days=1)).date())
-
         if dt.date() == now.date():
             preamble = dt.strftime("%-I%p")
         elif dt.date() == (now + datetime.timedelta(days=1)).date():
-            preamble = dt.strftime("Tom %-I%p")
+            preamble = dt.strftime("tmw %-I%p")
         elif (dt - now) < datetime.timedelta(days=7):
             preamble = dt.strftime("%a %-I%p")
         else:
@@ -332,20 +343,8 @@ class CalendarComponent(DashboardComponent):
         if preamble.endswith("M"): # PM/AM -> P/A; no strftime option for that
             preamble = preamble[:-1]
 
-
-        text = f"{preamble} {summary}"
-
-        x = 0
-        y = 0
-        for c in text:
-            width = self.draw_text(self.font, x, y, textColor, c.encode("ascii", errors="ignore").decode("ascii"))
-            x += (width or 0)
-            if x > self.w:
-                y += self.font.height
-                x = 0
-                # redraw character that was at least partially off-screen..
-                width = self.draw_text(self.font, x, y, textColor, c.encode("ascii", errors="ignore").decode("ascii"))
-                x += (width or 0)
+        text = f"{preamble}: {summary}"
+        self.draw_text(textColor, text.encode("ascii", errors="ignore").decode("ascii"))
 
 
 # TODO List:
@@ -353,12 +352,14 @@ class CalendarComponent(DashboardComponent):
 # - Add icons - like a lightning bolt for power, or, sun^ sunv for high and low?
 # - Animations - don't know where, when, but let's use all the pixels sometimes
 # - Jitter the data loader times -- if two things are both 1800s, don't want them to occur at the same time
+# - Add capability for panels to have subpanels, since drawing ops are full panel size
+# - Add something with an icon/image -- maybe the weather forecast
+# - Make panels able to opt-out of being part of the draw-loop -- maybe they should have the ability to return N frames where N can be 0, 1, or higher?
 # New data:
 # - Weather Forecast: Upcoming High/Low
 # - Weather Forecast: Upcoming Rain
 # - Date w/ time -- eg. "Tue 6:53"
 # - Times: Sunrise, Sunset
-# - Calendar - pull upcoming events in the next 1-3d, use super small font to draw
 # - Power: Usage, Solar Generation
 # - Home Assistant: Back door / Garage door / etc. Open
 # - Google Location: Distance to Mathieu?
@@ -393,7 +394,7 @@ class Clock(SampleBase):
 
         lower_panels = [
             AqiComponent(self.purpleair, 0, 13, 64, 19),
-            # CalendarComponent(self.calendar, 0, 13, 64, 19),
+            CalendarComponent(self.calendar, 0, 13, 64, 19),
         ]
 
         while True:
@@ -413,79 +414,6 @@ class Clock(SampleBase):
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
             await asyncio.sleep(0.1)
 
-
-# http://10.156.95.135/json
-# {'SensorId': '...',
-# 'p25aqic_b': 'rgb(55,234,0)'
-# 'pm2.5_aqi_b': 30
-# 'p25aqic': 'rgb(87,237,0)', 
-# 'pm2.5_aqi': 35, 
-# 'current_temp_f': 62, 
-# 'DateTime': '2023/09/14T14:34:30z',
-# 'Geo': '...',
-# 'Mem': 9528,
-# 'memfrag': 43,
-# 'memfb': 5776,
-# 'memcs': 168,
-# 'Id': 8540,
-# 'lat': ...,
-# 'lon': ...,
-# 'Adc': 0.0,
-# 'loggingrate': 15,
-# 'place': 'outside',
-# 'version': '7.04', 
-# 'uptime': 503476, 
-# 'rssi': -65, 
-# 'period': 120, 
-# 'httpsuccess': 8528, 
-# 'httpsends': 8530, 
-# 'hardwareversion': '3.0', 
-# 'hardwarediscovered': '3.0+OPENLOG+NO-DISK+RV3028+BME68X+PMSX003-A+PMSX003-B', 
-# 'current_humidity': 36, 
-# 'current_dewpoint_f': 35, 
-# 'pressure': 899.9
-# 'current_temp_f_680': 62
-# 'current_humidity_680': 36
-# 'current_dewpoint_f_680': 35
-# 'pressure_680': 899.9
-# 'gas_680': 86.84
-# 'pm1_0_cf_1_b': 5.12
-# 'p_0_3_um_b': 983.43
-# 'pm2_5_cf_1_b': 7.19
-# 'p_0_5_um_b': 289.84, 
-# 'pm10_0_cf_1_b': 8.17, 
-# 'p_1_0_um_b': 34.03, 
-# 'pm1_0_atm_b': 5.12, 
-# 'p_2_5_um_b': 4.97, 
-# 'pm2_5_atm_b': 7.19, 
-# 'p_5_0_um_b': 1.28, 
-# 'pm10_0_atm_b': 8.17, 
-# 'p_10_0_um_b': 0.59, 
-# 'pm1_0_cf_1': 6.35, 
-# 'p_0_3_um': 1279.63, 
-# 'pm2_5_cf_1': 8.42, 
-# 'p_0_5_um': 365.6, 
-# 'pm10_0_cf_1': 9.56, 
-# 'p_1_0_um': 38.49, 
-# 'pm1_0_atm': 6.35, 
-# 'p_2_5_um': 4.65, 
-# 'pm2_5_atm': 8.42, 
-# 'p_5_0_um': 1.47, 
-# 'pm10_0_atm': 9.56, 
-# 'p_10_0_um': 0.63, 
-# 'pa_latency': 244, 
-# 'response': 401,
-# 'response_date': 1694702059,
-# 'latency': 256,
-# 'wlstate': 'Connected',
-# 'status_0': 2,
-# 'status_1': 0,
-# 'status_2': 2,
-# 'status_3': 2,
-# 'status_4': 2,
-# 'status_6': 3,
-# 'ssid': '...'
-# }
 
 # Main function
 if __name__ == "__main__":
