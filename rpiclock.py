@@ -151,7 +151,6 @@ class CalendarDataResolver(DataResolver):
         future_cutoff = now + datetime.timedelta(days=7)
         near_future_events = [x for x in future_events if x[0] < future_cutoff]
         near_future_events = sorted(near_future_events, key=lambda event: event[0])
-        print("near_future_events", near_future_events)
 
         return {
             "future_events": near_future_events
@@ -159,7 +158,7 @@ class CalendarDataResolver(DataResolver):
 
 
 class DashboardComponent(object):
-    def __init__(self, x, y, w, h, font_path):
+    def __init__(self, x, y, w, h, font_path, data_resolver):
         self.x = x
         self.y = y
         self.w = w
@@ -168,12 +167,13 @@ class DashboardComponent(object):
         self.buffer = Image.new("RGB", (self.w, self.h))
         self.imagedraw = ImageDraw.Draw(self.buffer)
         self.pil_font = None
+        self.data_resolver = data_resolver
 
     def load_font(self, name):
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
-    def draw(self, canvas, now):
-        self.do_draw(now)
+    def draw(self, canvas, now, data, frame):
+        self.do_draw(now, data, frame)
         canvas.SetImage(self.buffer, self.x, self.y)
 
     def fill(self, color):
@@ -272,10 +272,10 @@ class DashboardComponent(object):
 
 class TimeComponent(DashboardComponent):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(data_resolver=None, *args, **kwargs)
         self.load_font("7x13")
 
-    def do_draw(self, now):
+    def do_draw(self, now, data, frame):
         self.fill((0, 0, 0))
 
         hue = int(now*50 % 360)
@@ -292,40 +292,44 @@ class TimeComponent(DashboardComponent):
 
 class AqiComponent(DashboardComponent):
     def __init__(self, purpleair, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.purpleair = purpleair
+        super().__init__(data_resolver=purpleair, *args, **kwargs)
         self.load_font("7x13")
 
-    def do_draw(self, now):
+    def frame_count(self, data):
+        if data == None:
+            return 0
+        else:
+            return 1
+
+    def do_draw(self, now, data, frame):
         self.fill((0, 16, 0))
-        pa = self.purpleair.data
-        if pa:
-            (red, green, blue) = pa["p25aqic"]
-            textColor = (red, green, blue)
-            aqi = pa['p25aqiavg']
-            self.draw_text(textColor, f"AQI {aqi:.0f}")
+        (red, green, blue) = data["p25aqic"]
+        textColor = (red, green, blue)
+        aqi = data['p25aqiavg']
+        self.draw_text(textColor, f"AQI {aqi:.0f}")
 
 
 class CalendarComponent(DashboardComponent):
     def __init__(self, calendar, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.calendar = calendar
+        super().__init__(data_resolver=calendar, *args, **kwargs)
         self.load_font("4x6")
         # self.load_font("tom-thumb")
         # FIXME: make a component able to opt-out of being drawn if it has no data, rather than being blank
 
-    def do_draw(self, now):
-        self.fill((0, 0, 16))
+    def frame_count(self, data):
+        if data == None:
+            return 0
+        return min(len(data["future_events"]), 3) # no more than this many events
 
-        if self.calendar.data is None:
-            return
+    def do_draw(self, now, data, frame):
+        self.fill((0, 0, 16))
 
         # FIXME: color is synced to the time, but, only by copy-and-paste
         hue = int(now*50 % 360)
         red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
         textColor = (red, green, blue)
 
-        (dt, summary) = self.calendar.data["future_events"][0]
+        (dt, summary) = data["future_events"][frame]
 
         preamble = ""
         target_tz = pytz.timezone("America/Edmonton")
@@ -342,6 +346,8 @@ class CalendarComponent(DashboardComponent):
 
         if preamble.endswith("M"): # PM/AM -> P/A; no strftime option for that
             preamble = preamble[:-1]
+        if preamble.endswith("P") or preamble.endswith("A"): # lowercase this
+            preamble = preamble[:-1] + preamble[-1].lower()
 
         text = f"{preamble}: {summary}"
         self.draw_text(textColor, text.encode("ascii", errors="ignore").decode("ascii"))
@@ -406,10 +412,38 @@ class Clock(SampleBase):
 
             offscreen_canvas.Clear()
 
-            time_component.draw(offscreen_canvas, now)
+            time_component.draw(offscreen_canvas, now, data=None, frame=0)
             
-            time_per_panel = 5
-            lower_panels[int(now / time_per_panel) % len(lower_panels)].draw(offscreen_canvas, now)
+            time_per_frame = 5
+
+            # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
+            lower_panel_datas = [x.data_resolver.data for x in lower_panels]
+
+            # Ask each panel how many frames they will have, considering their data.
+            frame_count = [x.frame_count(lower_panel_datas[i]) for i, x in enumerate(lower_panels)]
+
+            # Based upon the total number of frames on all panels, and the time, calculate the active frame.
+            total_frames = sum(frame_count)
+
+            if total_frames != 0:
+                active_frame = int(now / time_per_frame) % total_frames
+
+                # Find the panel for that frame, and the index of that frame in that panel.
+                running_total = 0
+                target_panel_index = None
+                target_frame_index = None
+                for panel_index, frame_count in enumerate(frame_count):
+                    maybe_frame_index = active_frame - running_total
+                    if maybe_frame_index < frame_count:
+                        target_panel_index = panel_index
+                        target_frame_index = maybe_frame_index
+                        break
+                    running_total += frame_count
+                if target_panel_index is None:
+                    raise Exception("target_panel_index=None")
+
+                # target_panel_index would be None if no panels had frames currently.
+                lower_panels[target_panel_index].draw(offscreen_canvas, now, data=lower_panel_datas[target_panel_index], frame=target_frame_index)
 
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
             await asyncio.sleep(0.1)
