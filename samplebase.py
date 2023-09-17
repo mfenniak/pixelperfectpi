@@ -44,9 +44,11 @@ class SampleBase(object):
         self.parser.add_argument("--led-panel-type", action="store", help="Needed to initialize special panels. Supported: 'FM6126A'", default="", type=str)
         self.parser.add_argument("--led-no-drop-privs", dest="drop_privileges", help="Don't drop privileges from 'root' after initializing the hardware.", action='store_false')
         self.parser.add_argument("--ical-url", dest="ical_url", help="iCal URL", default=None, type=str)
+        self.parser.add_argument("--font-path", dest="font_path", help="path to pil font files", default=None, type=str)
         self.parser.set_defaults(drop_privileges=True)
 
     ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
+    font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
 
     def usleep(self, value):
         time.sleep(value / 1000000.0)

@@ -21,7 +21,6 @@ import pytz
 import math
 # import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 
-
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
 
@@ -160,17 +159,18 @@ class CalendarDataResolver(DataResolver):
 
 
 class DashboardComponent(object):
-    def __init__(self, x, y, w, h):
+    def __init__(self, x, y, w, h, font_path):
         self.x = x
         self.y = y
         self.w = w
         self.h = h
+        self.font_path = font_path
         self.buffer = Image.new("RGB", (self.w, self.h))
         self.imagedraw = ImageDraw.Draw(self.buffer)
         self.pil_font = None
 
     def load_font(self, name):
-        self.pil_font = ImageFont.load(f"./fonts/{name}.pil") # FIXME: make this into an absolute path for nix packaging of app
+        self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
     def draw(self, canvas, now):
         self.do_draw(now)
@@ -390,11 +390,11 @@ class Clock(SampleBase):
         font = graphics.Font()
         font.LoadFont(font_path + "/7x13.bdf")
 
-        time_component = TimeComponent(29, 0, 35, 13)
+        time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
 
         lower_panels = [
-            AqiComponent(self.purpleair, 0, 13, 64, 19),
-            CalendarComponent(self.calendar, 0, 13, 64, 19),
+            AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
+            CalendarComponent(self.calendar, 0, 13, 64, 19, font_path=self.font_path),
         ]
 
         while True:
@@ -417,6 +417,10 @@ class Clock(SampleBase):
 
 # Main function
 if __name__ == "__main__":
+    import os.path, sys
+    file_path = os.path.join(sys.prefix, 'fonts')
+    print("file_path", file_path)
+
     run_text = Clock()
     if (not run_text.process()):
         run_text.print_help()
