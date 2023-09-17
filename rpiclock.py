@@ -18,7 +18,6 @@ import icalendar
 import datetime
 import pytz
 import random
-# import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -65,14 +64,20 @@ class PurpleAirDataResolver(DataResolver):
                 if response.status != 200:
                     raise Exception(f"Unexpected status code: {response.status}")
                 purpleair = await response.json()
-                # print("PurpleAirDataResolver.do_collection", purpleair)
 
-                color = purpleair["p25aqic"] # rgb(87,237,0)
+                color = purpleair["p25aqic"] # string, eg. rgb(87,237,0)
                 m = RGB_RE.match(color)
                 red, green, blue = int(m.group("red")), int(m.group("green")), int(m.group("blue")) 
                 purpleair["p25aqic"] = (red, green, blue)
 
                 purpleair["p25aqiavg"] = (purpleair['pm2.5_aqi'] + purpleair['pm2.5_aqi_b']) / 2
+
+                temp_f = purpleair["current_temp_f"]
+                # PurpleAir's API has a "Raw temperature".  https://community.purpleair.com/t/purpleair-sensors-functional-overview/150
+                # They correct it -8 deg F to get a good approximation of ourdoor ambient temp.
+                temp_f -= 8
+                temp_c = (temp_f - 32) * 5 / 9
+                purpleair["current_temp_c"] = temp_c
 
                 # {'SensorId': '...',
                 # 'p25aqic_b': 'rgb(55,234,0)'
@@ -282,12 +287,23 @@ class TimeComponent(DashboardComponent):
         red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
         color = (red, green, blue)
 
-        timestr = time.strftime("%I:%M")
-        if timestr[0] == "0":
-            timestr = " " + timestr[1:]
+        timestr = time.strftime("%-I:%M")
         if int(now % 2) == 0:
             timestr = timestr.replace(":", " ")
-        self.draw_text(color, timestr)
+        self.draw_text(color, timestr, halign="right")
+
+
+class CurrentComponent(DashboardComponent):
+    def __init__(self, purpleair, *args, **kwargs):
+        super().__init__(data_resolver=purpleair, *args, **kwargs)
+        self.load_font("7x13")
+
+    def do_draw(self, now, data, frame):
+        self.fill((0, 0, 0))
+        if data is None:
+            return
+        curr_c = data["current_temp_c"]
+        self.draw_text((128,128,128),f"{curr_c:.0f}°")
 
 
 class AqiComponent(DashboardComponent):
@@ -332,8 +348,6 @@ class CalendarComponent(DashboardComponent):
     def __init__(self, calendar, *args, **kwargs):
         super().__init__(data_resolver=calendar, *args, **kwargs)
         self.load_font("4x6")
-        # self.load_font("tom-thumb")
-        # FIXME: make a component able to opt-out of being drawn if it has no data, rather than being blank
 
     def frame_count(self, data):
         if data == None:
@@ -373,15 +387,11 @@ class CalendarComponent(DashboardComponent):
 
 
 # TODO List:
-# - Create a "measure text" function, center text
 # - Add icons - like a lightning bolt for power, or, sun^ sunv for high and low?
 # - Animations - don't know where, when, but let's use all the pixels sometimes
-# - Jitter the data loader times -- if two things are both 1800s, don't want them to occur at the same time
 # - Add capability for panels to have subpanels, since drawing ops are full panel size
 # - Add something with an icon/image -- maybe the weather forecast
-# - Make panels able to opt-out of being part of the draw-loop -- maybe they should have the ability to return N frames where N can be 0, 1, or higher?
 # New data:
-# - Weather Forecast: Upcoming High/Low
 # - Weather Forecast: Upcoming Rain
 # - Date w/ time -- eg. "Tue 6:53"
 # - Times: Sunrise, Sunset
@@ -416,6 +426,7 @@ class Clock(SampleBase):
         font.LoadFont(font_path + "/7x13.bdf")
 
         time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
+        curr_component = CurrentComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path)
 
         lower_panels = [
             AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
@@ -433,7 +444,8 @@ class Clock(SampleBase):
             offscreen_canvas.Clear()
 
             time_component.draw(offscreen_canvas, now, data=None, frame=0)
-            
+            curr_component.draw(offscreen_canvas, now, data=curr_component.data_resolver.data, frame=0)
+
             time_per_frame = 5
 
             # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
