@@ -8,7 +8,8 @@ else:
     from rgbmatrix import graphics
 from rgbmatrix import font_path
 from lxml import etree
-from PIL.ImageColor import getrgb
+from PIL.ImageColor import getrgb # FIXME: change to just ImageColor import
+from PIL import Image, ImageFont, ImageDraw
 import time
 import asyncio
 import aiohttp
@@ -17,6 +18,7 @@ import re
 import icalendar
 import datetime
 import pytz
+# import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
@@ -96,7 +98,7 @@ class EnvironmentCanadaDataResolver(DataResolver):
         xml_content = await self.fetch_xml()
         root = etree.fromstring(xml_content)
         elements = root.xpath("/siteData/forecastGroup/forecast")
-        # FIXME: handle missing/malformed data; no [0] without a good error
+        # FIXME: handle missing/malformed data; no [0] without a good error; just set data to None
         first_forecast = elements[0]
         forecast_name = first_forecast.xpath("period[@textForecastName]")[0].values()[0] # "Today", "Tonight"
         temperatures = first_forecast.xpath("temperatures/temperature")
@@ -162,69 +164,139 @@ class DashboardComponent(object):
         self.y = y
         self.w = w
         self.h = h
+        self.buffer = Image.new("RGB", (self.w, self.h))
+        self.imagedraw = ImageDraw.Draw(self.buffer)
+        self.pil_font = None
+
+    def load_font(self, name):
+        self.pil_font = ImageFont.load(f"./fonts/{name}.pil") # FIXME: make this into an absolute path for nix packaging of app
 
     def draw(self, canvas, now):
-        self.canvas = canvas
         self.do_draw(now)
-        self.canvas = None
+        canvas.SetImage(self.buffer, self.x, self.y)
 
     def fill(self, color):
-        for x in range(self.x, self.x + self.w):
-            for y in range(self.y, self.y + self.h):
-                self.canvas.SetPixel(x, y, color.red, color.green, color.blue)
+        self.buffer.paste(color, box=(0,0,self.w,self.h))
 
-    def draw_text(self, font, x, y, color, text):
-        # FIXME: width/height limits not implemented
-        return graphics.DrawText(self.canvas, font, self.x + x, self.y + y + font.height - (font.height - font.baseline), color, text)
+    # halign - left, center, right
+    # valign - top, middle, bottom
+    def draw_text(self, color, text, halign="center", valign="middle"):
+        if self.pil_font is None:
+            raise Exception("must call load_font first")
+
+        # measure the total width of the text...
+        (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), text, font=self.pil_font, spacing=0, align="left")
+        if right <= self.w:
+            # it will fit in a single-line; nice and easy peasy...
+            text_height = bottom
+            if valign == "top":
+                text_y = 0
+            elif valign == "bottom":
+                text_y = self.h - bottom
+            else: # middle
+                text_y = (self.h - text_height) // 2
+            text_width = right
+            if halign == "left":
+                text_x = 0
+            elif halign == "right":
+                text_x = self.w - text_width
+            else: # center
+                text_x = (self.w - text_width) // 2
+            self.imagedraw.multiline_text((text_x, text_y), text, fill=color, font=self.pil_font, spacing=0, align=halign)
+            return
+
+        # alright... let's just go line-by-line then, shall we.  First find the most text that will fit into one line,
+        # word-by-word.
+        lines = []
+        text_words = text.split(" ")
+        line = ""
+        height_total = 0
+        while True:
+            if len(text_words) == 0:
+                # Ran out of words.
+                if line != "":
+                    height_total += bottom
+                    lines.append(line)
+                break
+
+            next_word = text_words[0]
+            proposed_line = line
+            if proposed_line != "":
+                proposed_line += " "
+            proposed_line += next_word
+            
+            # will "proposed_line" fit onto a line?
+            (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), proposed_line, font=self.pil_font, spacing=0, align="left")
+            if right > self.w:
+                height_total += bottom
+                # no, proposed_line is too big; we'll make do with the last `line`
+                if line != "":
+                    lines.append(line)
+                    line = ""
+                    # leave next_word in text_words and keep going
+                else:
+                    # next_word by itself won't fit on a line; well, we can't skip the middle of a sentence so we'll
+                    # just consume it regardless as it's own line
+                    lines.append(next_word)
+                    text_words = text_words[1:]
+            else:
+                # yes, it will fit on the line
+                line = proposed_line
+                text_words = text_words[1:]
+
+        print("Determined lines...")
+        for line in lines:
+            print("\t", line)
 
 
 class TimeComponent(DashboardComponent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.font = graphics.Font()
-        self.font.LoadFont(font_path + "/7x13.bdf")
+        self.load_font("7x13")
 
     def do_draw(self, now):
-        # self.fill(graphics.Color(255, 255, 255))
+        self.fill((0, 0, 0))
+
         hue = int(now*50 % 360)
-        # print("hue", hue)
         red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
-        color = graphics.Color(red, green, blue)
+        color = (red, green, blue)
+
         timestr = time.strftime("%I:%M")
         if timestr[0] == "0":
             timestr = " " + timestr[1:]
         if int(now % 2) == 0:
             timestr = timestr.replace(":", " ")
-        self.draw_text(self.font, 0, 0, color, timestr)
+        self.draw_text(color, timestr)
 
 
 class AqiComponent(DashboardComponent):
     def __init__(self, purpleair, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.purpleair = purpleair
-        self.font = graphics.Font()
-        self.font.LoadFont(font_path + "/7x13.bdf")
+        self.load_font("7x13")
 
     def do_draw(self, now):
-        # self.fill(graphics.Color(255, 0, 255))
+        self.fill((0, 16, 0))
         pa = self.purpleair.data
         if pa:
             (red, green, blue) = pa["p25aqic"]
-            textColor = graphics.Color(red, green, blue)
+            textColor = (red, green, blue)
             aqi = pa['p25aqiavg']
-            self.draw_text(self.font, 8, 0, textColor, f"AQI {aqi:>3.0f}")
+            self.draw_text(textColor, f"AQI {aqi:.0f}")
+            # self.draw_text(textColor, "This is a long multi line long super word sentence and we'll have to see how the new splitting algorithm works")
 
 
 class CalendarComponent(DashboardComponent):
     def __init__(self, calendar, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.calendar = calendar
-        self.font = graphics.Font()
-        self.font.LoadFont(font_path + "/4x6.bdf")
-
+        # self.font = graphics.Font()
+        # self.font.LoadFont(font_path + "/4x6.bdf")
+        self.load_font("4x6")
         # FIXME: make a component able to opt-out of being drawn if it has no data, rather than being blank
 
     def do_draw(self, now):
+        self.fill((0, 0, 16))
         # self.fill(graphics.Color(255, 0, 255))
 
         if self.calendar.data is None:
@@ -315,10 +387,8 @@ class Clock(SampleBase):
 
         lower_panels = [
             AqiComponent(self.purpleair, 0, 13, 64, 19),
-            CalendarComponent(self.calendar, 0, 13, 64, 19),
+            # CalendarComponent(self.calendar, 0, 13, 64, 19),
         ]
-        # aqi_component =  # 0, 32, 64, 32)
-        # hue = 0
 
         while True:
             now = time.time()
@@ -333,9 +403,6 @@ class Clock(SampleBase):
             
             time_per_panel = 5
             lower_panels[int(now / time_per_panel) % len(lower_panels)].draw(offscreen_canvas, now)
-
-
-            # aqi_component.draw(offscreen_canvas, now)
 
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
             await asyncio.sleep(0.1)
