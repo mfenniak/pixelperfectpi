@@ -18,7 +18,7 @@ import re
 import icalendar
 import datetime
 import pytz
-import math
+import random
 # import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
@@ -26,7 +26,8 @@ RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)"
 
 class DataResolver(object):
     def __init__(self, refresh_interval):
-        self.refresh_interval = refresh_interval
+        jitter_frac = 1 + (random.random() * 0.2) # always jitter longer so we don't drop below refresh_interval
+        self.refresh_interval = (refresh_interval * jitter_frac)
         self.last_refresh = 0
         self.lock = asyncio.Lock()
         self.data = None
@@ -85,7 +86,7 @@ class PurpleAirDataResolver(DataResolver):
 
 class EnvironmentCanadaDataResolver(DataResolver):
     def __init__(self):
-        super().__init__(refresh_interval=1800)
+        super().__init__(refresh_interval=3600)
 
     async def fetch_xml(self):
         async with aiohttp.ClientSession() as session:
@@ -117,7 +118,7 @@ class EnvironmentCanadaDataResolver(DataResolver):
 
 class CalendarDataResolver(DataResolver):
     def __init__(self, ical_url):
-        super().__init__(refresh_interval=1800)
+        super().__init__(refresh_interval=3600)
         self.ical_url = ical_url
 
     async def fetch_ical(self):
