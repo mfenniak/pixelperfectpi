@@ -310,6 +310,25 @@ class AqiComponent(DashboardComponent):
         self.draw_text(textColor, f"AQI {aqi:.0f}")
 
 
+class WeatherForecastComponent(DashboardComponent):
+    def __init__(self, env_canada, *args, **kwargs):
+        super().__init__(data_resolver=env_canada, *args, **kwargs)
+        self.load_font("6x10")
+
+    def frame_count(self, data):
+        if data == None:
+            return 0
+        else:
+            return 1
+
+    def do_draw(self, now, data, frame):
+        self.fill((16, 0, 0))
+        n = data['forecast']['name']
+        t = data['forecast']['type'].capitalize()
+        deg_c = data['forecast']['deg_c']
+        self.draw_text((255, 255, 255), f"{n} {t} {deg_c:.0f}°")
+
+
 class CalendarComponent(DashboardComponent):
     def __init__(self, calendar, *args, **kwargs):
         super().__init__(data_resolver=calendar, *args, **kwargs)
@@ -402,6 +421,7 @@ class Clock(SampleBase):
         lower_panels = [
             AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
             CalendarComponent(self.calendar, 0, 13, 64, 19, font_path=self.font_path),
+            WeatherForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
         ]
 
         while True:
