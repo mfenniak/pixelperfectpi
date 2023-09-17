@@ -302,6 +302,12 @@ class CalendarComponent(DashboardComponent):
         if self.calendar.data is None:
             return
 
+        # FIXME: synced to the time, but, only by copy-and-paste
+        hue = int(now*50 % 360)
+        # print("hue", hue)
+        red, green, blue = getrgb(f"hsl({hue}, 100%, 50%)")
+        textColor = graphics.Color(red, green, blue)
+
         (dt, summary) = self.calendar.data["future_events"][0]
 
         preamble = ""
@@ -326,8 +332,8 @@ class CalendarComponent(DashboardComponent):
         if preamble.endswith("M"): # PM/AM -> P/A; no strftime option for that
             preamble = preamble[:-1]
 
-        textColor = graphics.Color(255, 0, 0)
-        text = f"{preamble}: {summary}"
+
+        text = f"{preamble} {summary}"
 
         x = 0
         y = 0
