@@ -18,6 +18,16 @@
       let
         python = "python311";
         pkgs = nixpkgs.legacyPackages.${system};
+        pythonPackages = (pythonInterpreter: (ps:
+          [
+            (mfenniak.packages.${system}.python-librgbmatrix pythonInterpreter)
+            ps.aiohttp
+            ps.lxml
+            ps.icalendar
+            ps.pytz
+            ps.recurring-ical-events
+          ] ++ ps.lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pythonInterpreter)
+        ));
       in rec {
         overlays.default = self: super: {
           pixelperfectpi = packages.default;
@@ -27,30 +37,12 @@
           pname = "pixelperfectpi";
           version = "0.1";
           src = ./.;
-          propagatedBuildInputs = with pkgs.${python}.pkgs; [
-            (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
-            aiohttp
-            lxml
-            icalendar
-            pytz
-            recurring-ical-events
-          ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python});
+          propagatedBuildInputs = [] ++ ((pythonPackages pkgs.${python}) pkgs.${python}.pkgs);
         };
 
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            (pkgs.${python}.withPackages
-              (ps: with ps;
-                [
-                  (mfenniak.packages.${system}.python-librgbmatrix pkgs.${python})
-                  aiohttp
-                  lxml
-                  icalendar
-                  pytz
-                  recurring-ical-events
-                ] ++ lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pkgs.${python})
-              )
-            )
+            (pkgs.${python}.withPackages (pythonPackages pkgs.${python}))
           ];
         };
       });
