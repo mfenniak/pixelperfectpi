@@ -332,6 +332,7 @@ class WeatherForecastComponent(DashboardComponent):
     def __init__(self, env_canada, *args, **kwargs):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
         self.load_font("6x10")
+        self.sun = Image.open(open('/home/mfenniak/Dev/rpiclock/sun.png', 'rb'))
 
     def frame_count(self, data):
         if data == None:
@@ -344,7 +345,15 @@ class WeatherForecastComponent(DashboardComponent):
         n = data['forecast']['name']
         t = data['forecast']['type'].capitalize()
         deg_c = data['forecast']['deg_c']
+
         self.draw_text((255, 255, 255), f"{n} {t} {deg_c:.0f}°")
+
+        # print("Loading icon...")
+        # icon = Image.open(open('/home/mfenniak/Dev/rpiclock/sun.png', 'rb'))
+        # print("icon...", icon.width, icon.height, icon.mode)
+        # print("blitting icon...")
+        self.buffer.paste(self.sun, (0, 0))
+        # offscreen_canvas.SetImage(icon, 0, 0)
 
 
 class CalendarComponent(DashboardComponent):
