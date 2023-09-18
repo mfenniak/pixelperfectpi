@@ -352,7 +352,9 @@ class WeatherForecastComponent(DashboardComponent):
         # icon = Image.open(open('/home/mfenniak/Dev/rpiclock/sun.png', 'rb'))
         # print("icon...", icon.width, icon.height, icon.mode)
         # print("blitting icon...")
-        self.buffer.paste(self.sun, (0, 0))
+        rgba = self.buffer.convert("RGBA")
+        rgba.alpha_composite(self.sun, (0, 0))
+        self.buffer = rgba.convert("RGB")
         # offscreen_canvas.SetImage(icon, 0, 0)
 
 
