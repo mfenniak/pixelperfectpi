@@ -19,6 +19,7 @@ import datetime
 import pytz
 import random
 import recurring_ical_events
+import os.path
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -437,8 +438,6 @@ class Clock(SampleBase):
         background_tasks = set()
 
         offscreen_canvas = self.matrix.CreateFrameCanvas()
-        font = graphics.Font()
-        font.LoadFont(font_path + "/7x13.bdf")
 
         time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
         curr_component = CurrentComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path)
@@ -498,10 +497,6 @@ class Clock(SampleBase):
 
 # Main function
 if __name__ == "__main__":
-    import os.path, sys
-    file_path = os.path.join(sys.prefix, 'fonts')
-    print("file_path", file_path)
-
     run_text = Clock()
     if (not run_text.process()):
         run_text.print_help()
