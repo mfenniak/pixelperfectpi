@@ -20,11 +20,11 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in rec {
         overlays.default = self: super: {
-          rpiclock = packages.default;
+          pixelperfectpi = packages.default;
         };
 
         packages.default = pkgs.${python}.pkgs.buildPythonApplication {
-          pname = "rpiclock";
+          pname = "pixelperfectpi";
           version = "0.1";
           src = ./.;
           propagatedBuildInputs = with pkgs.${python}.pkgs; [

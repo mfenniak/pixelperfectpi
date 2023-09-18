@@ -4,9 +4,9 @@ from distutils.core import setup
 import os
 
 setup(
-    name="rpiclock",
+    name="pixelperfectpi",
     py_modules=['samplebase'],
-    scripts=['rpiclock.py'],
+    scripts=['pixelperfectpi.py'],
     data_files=[
         ("fonts", [f"fonts/{x}" for x in os.listdir("fonts")])
     ]
