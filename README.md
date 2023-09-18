@@ -10,12 +10,21 @@ Features:
 - Displays the next weather forecast sourced from Environment Canada.
 - Displays the next three calendar events from an iCal feed.
 
+Example installation:
 
-# NixOS Configuration
+https://github.com/mfenniak/pixelperfectpi/assets/91093/4e8a3595-d7bc-43fb-b1df-e09c437a9fd1
+
+# Running
+
+## LED Matrix
+
+In order to get the Raspberry Pi -> LED Matrix wired up and working, follow the instructions at https://github.com/hzeller/rpi-rgb-led-matrix first.
+
+## NixOS Configuration
 
 Although this is a typicalish Python application, I've deployed it on my Raspberry Pi through NixOS.  After installing NixOS (https://nix.dev/tutorials/nixos/installing-nixos-on-a-raspberry-pi), the following flake configuration can be used to set up this app and have it autostart on boot, and set up the Raspberry Pi hardware correctly:
 
-## flake.nix
+### flake.nix
 ```
 {
   inputs = {
@@ -37,7 +46,7 @@ Although this is a typicalish Python application, I've deployed it on my Raspber
 }
 ```
 
-## nixclock.nix
+### nixclock.nix
 
 ```
 { config, pkgs, lib, ... }:
