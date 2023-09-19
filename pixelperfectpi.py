@@ -109,6 +109,7 @@ class EnvironmentCanadaDataResolver(DataResolver):
         first_forecast = elements[0]
         forecast_name = first_forecast.xpath("period[@textForecastName]")[0].values()[0] # "Today", "Tonight"
         temperatures = first_forecast.xpath("temperatures/temperature")
+        text_summary = first_forecast.xpath("abbreviatedForecast/textSummary/text()")[0]
         first_temperature = temperatures[0]
         # Future: precipitation, snowLevel, windChill, uv, wind?
         data = {
@@ -116,6 +117,7 @@ class EnvironmentCanadaDataResolver(DataResolver):
                 "name": forecast_name, # Today, Tonight
                 "type": first_temperature.get("class"), # high/low
                 "deg_c": float(first_temperature.text),
+                "text_summary": text_summary
             }
         }
         return data
@@ -332,7 +334,7 @@ class AqiComponent(DashboardComponent):
 class WeatherForecastComponent(DashboardComponent):
     def __init__(self, env_canada, *args, **kwargs):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
-        self.load_font("6x10")
+        self.load_font("4x6")
 
     def frame_count(self, data):
         if data == None:
@@ -343,9 +345,10 @@ class WeatherForecastComponent(DashboardComponent):
     def do_draw(self, now, data, frame):
         self.fill((16, 0, 0))
         n = data['forecast']['name']
+        s = data['forecast']['text_summary']
         t = data['forecast']['type'].capitalize()
         deg_c = data['forecast']['deg_c']
-        self.draw_text((255, 255, 255), f"{n} {t} {deg_c:.0f}°")
+        self.draw_text((255, 255, 255), f"{n} {s} {t} {deg_c:.0f}°")
 
 
 class CalendarComponent(DashboardComponent):
