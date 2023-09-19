@@ -153,7 +153,9 @@ class CalendarDataResolver(DataResolver):
                 if dtstart > now:
                     future_events.append((dtstart.astimezone(target_tz), str(event.get("SUMMARY"))))
             elif isinstance(dtstart, datetime.date):
-                if dtstart > today: # ? Should we show events today?  Or for a bit, at least?
+                # Show "today" events until 8am, then move on
+                dtstart_morning = datetime.datetime.combine(dtstart, datetime.time(8, 0, 0)).astimezone(target_tz)
+                if dtstart_morning > now:
                     start = datetime.datetime.combine(dtstart, datetime.time()).astimezone(target_tz)
                     future_events.append((start, str(event.get("SUMMARY"))))
             else:
