@@ -12,8 +12,7 @@ Features:
 
 Example installation:
 
-https://github.com/mfenniak/pixelperfectpi/assets/91093/166069e5-3f52-4074-9f42-28def38136a9
-
+https://github.com/mfenniak/pixelperfectpi/assets/91093/f42331e7-f9d0-4a45-8c1d-4392a088cb44
 
 # Running
 
