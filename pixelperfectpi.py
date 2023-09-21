@@ -491,6 +491,8 @@ class Clock(SampleBase):
                         break
                     running_total += frame_count
                 if target_panel_index is None:
+                    # FIXME: probably should have error handling in `run` to avoid freezing the display... although
+                    # an "exit and let systemd restart" strategy isn't necessarily bad.
                     raise Exception("target_panel_index=None")
 
                 # target_panel_index would be None if no panels had frames currently.
