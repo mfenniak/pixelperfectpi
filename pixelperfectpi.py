@@ -283,6 +283,47 @@ class DashboardComponent(object):
         self.imagedraw.multiline_text((text_x, text_y), new_text, fill=color, font=self.pil_font, spacing=0, align=halign)
 
 
+class ComponentSwappingComponent(DashboardComponent):
+    def __init__(self, panels, time_per_frame=5, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.panels = panels
+        self.time_per_frame = time_per_frame
+
+    # FIXME: this overrides "draw" so that we can pass "canvas" to the subpanel, rather than using the
+    # self.buffer PIL panel.  That's probably "OK" but it would be nice if there wasn't a transition
+    # between different panel types included inside the components, then they could delegate to each
+    # other more cleanly.
+    def draw(self, canvas, now, data, frame):
+        # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
+        panel_datas = [x.data_resolver.data for x in self.panels]
+
+        # Ask each panel how many frames they will have, considering their data.
+        frame_count = [x.frame_count(panel_datas[i]) for i, x in enumerate(self.panels)]
+
+        # Based upon the total number of frames on all panels, and the time, calculate the active frame.
+        total_frames = sum(frame_count)
+
+        if total_frames == 0:
+            self.fill((0, 0, 0))
+            return
+
+        active_frame = int(now / self.time_per_frame) % total_frames
+
+        # Find the panel for that frame, and the index of that frame in that panel.
+        running_total = 0
+        target_panel_index = None
+        target_frame_index = None
+        for panel_index, frame_count in enumerate(frame_count):
+            maybe_frame_index = active_frame - running_total
+            if maybe_frame_index < frame_count:
+                target_panel_index = panel_index
+                target_frame_index = maybe_frame_index
+                break
+            running_total += frame_count
+
+        self.panels[target_panel_index].draw(canvas, now, data=panel_datas[target_panel_index], frame=target_frame_index)
+
+
 class TimeComponent(DashboardComponent):
     def __init__(self, *args, **kwargs):
         super().__init__(data_resolver=None, *args, **kwargs)
@@ -447,11 +488,18 @@ class Clock(SampleBase):
         time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
         curr_component = CurrentComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path)
 
-        lower_panels = [
-            AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
-            CalendarComponent(self.calendar, 0, 13, 64, 19, font_path=self.font_path),
-            WeatherForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
-        ]
+        # FIXME: repeating the coords over and over again doesn't make much sense
+        lower_panels = ComponentSwappingComponent(
+            panels=[
+                AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
+                CalendarComponent(self.calendar, 0, 13, 64, 19, font_path=self.font_path),
+                WeatherForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
+            ],
+            time_per_frame=5,
+            data_resolver=None,
+            x=0, y=13, w=64, h=19,
+            font_path=self.font_path,
+        )
 
         while True:
             now = time.time()
@@ -462,41 +510,11 @@ class Clock(SampleBase):
 
             offscreen_canvas.Clear()
 
+            # FIXME: frame=... should be removed as an input; only ComponentSwappingComponent
+            # needs that kind of knowledge and it can be internal to it and components used by it
             time_component.draw(offscreen_canvas, now, data=None, frame=0)
             curr_component.draw(offscreen_canvas, now, data=curr_component.data_resolver.data, frame=0)
-
-            time_per_frame = 5
-
-            # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
-            lower_panel_datas = [x.data_resolver.data for x in lower_panels]
-
-            # Ask each panel how many frames they will have, considering their data.
-            frame_count = [x.frame_count(lower_panel_datas[i]) for i, x in enumerate(lower_panels)]
-
-            # Based upon the total number of frames on all panels, and the time, calculate the active frame.
-            total_frames = sum(frame_count)
-
-            if total_frames != 0:
-                active_frame = int(now / time_per_frame) % total_frames
-
-                # Find the panel for that frame, and the index of that frame in that panel.
-                running_total = 0
-                target_panel_index = None
-                target_frame_index = None
-                for panel_index, frame_count in enumerate(frame_count):
-                    maybe_frame_index = active_frame - running_total
-                    if maybe_frame_index < frame_count:
-                        target_panel_index = panel_index
-                        target_frame_index = maybe_frame_index
-                        break
-                    running_total += frame_count
-                if target_panel_index is None:
-                    # FIXME: probably should have error handling in `run` to avoid freezing the display... although
-                    # an "exit and let systemd restart" strategy isn't necessarily bad.
-                    raise Exception("target_panel_index=None")
-
-                # target_panel_index would be None if no panels had frames currently.
-                lower_panels[target_panel_index].draw(offscreen_canvas, now, data=lower_panel_datas[target_panel_index], frame=target_frame_index)
+            lower_panels.draw(offscreen_canvas, now, data=None, frame=0)
 
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
             await asyncio.sleep(0.1)
