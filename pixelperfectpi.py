@@ -342,17 +342,42 @@ class TimeComponent(DashboardComponent):
         self.draw_text(color, timestr, halign="right")
 
 
-class CurrentComponent(DashboardComponent):
+class DayOfWeekComponent(DashboardComponent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.load_font("7x13")
+
+    def frame_count(self, data):
+        return 1
+
+    def do_draw(self, now, data, frame):
+        self.fill((0, 0, 0))
+
+        hue = int(now*50 % 360)
+        red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
+        color = (red, green, blue)
+
+        timestr = time.strftime("%a")
+        self.draw_text(color, timestr)
+
+
+class CurrentTemperatureComponent(DashboardComponent):
     def __init__(self, purpleair, *args, **kwargs):
         super().__init__(data_resolver=purpleair, *args, **kwargs)
         self.load_font("7x13")
+
+    def frame_count(self, data):
+        if data == None:
+            return 0
+        else:
+            return 1
 
     def do_draw(self, now, data, frame):
         self.fill((0, 0, 0))
         if data is None:
             return
         curr_c = data["current_temp_c"]
-        self.draw_text((128,128,128),f"{curr_c:.0f}°")
+        self.draw_text((128,128,128), f"{curr_c:.0f}°")
 
 
 class AqiComponent(DashboardComponent):
@@ -486,7 +511,17 @@ class Clock(SampleBase):
         offscreen_canvas = self.matrix.CreateFrameCanvas()
 
         time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
-        curr_component = CurrentComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path)
+        curr_component = ComponentSwappingComponent(
+            panels=[
+                CurrentTemperatureComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path),
+                # FIXME: data_resolver here shouldn't be necessary but ComponentSwappingComponent requires it
+                DayOfWeekComponent(0, 0, 29, 13, data_resolver=self.purpleair, font_path=self.font_path),
+            ],
+            time_per_frame=5,
+            data_resolver=None,
+            x=0, y=0, w=29, h=13,
+            font_path=self.font_path,
+        )
 
         # FIXME: repeating the coords over and over again doesn't make much sense
         lower_panels = ComponentSwappingComponent(
@@ -513,7 +548,7 @@ class Clock(SampleBase):
             # FIXME: frame=... should be removed as an input; only ComponentSwappingComponent
             # needs that kind of knowledge and it can be internal to it and components used by it
             time_component.draw(offscreen_canvas, now, data=None, frame=0)
-            curr_component.draw(offscreen_canvas, now, data=curr_component.data_resolver.data, frame=0)
+            curr_component.draw(offscreen_canvas, now, data=None, frame=0)
             lower_panels.draw(offscreen_canvas, now, data=None, frame=0)
 
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
