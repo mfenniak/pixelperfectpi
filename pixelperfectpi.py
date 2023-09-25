@@ -111,6 +111,12 @@ class EnvironmentCanadaDataResolver(DataResolver):
         temperatures = first_forecast.xpath("temperatures/temperature")
         text_summary = first_forecast.xpath("abbreviatedForecast/textSummary/text()")[0]
         first_temperature = temperatures[0]
+
+        riseset = root.xpath("(/siteData/riseSet/dateTime[@zone='UTC'])[1]")[0]
+        riseset_dt = riseset.xpath("timeStamp/text()")[0]
+        (year, month, day, hour, minute) = (riseset_dt[:4], riseset_dt[4:6], riseset_dt[6:8], riseset_dt[8:10], riseset_dt[10:12])
+        riseset_dt = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), tzinfo=pytz.utc)
+
         # Future: precipitation, snowLevel, windChill, uv, wind?
         data = {
             "forecast": {
@@ -118,6 +124,10 @@ class EnvironmentCanadaDataResolver(DataResolver):
                 "type": first_temperature.get("class"), # high/low
                 "deg_c": float(first_temperature.text),
                 "text_summary": text_summary
+            },
+            "sun": {
+                "type": riseset.get("name"),
+                "timestamp": riseset_dt
             }
         }
         return data
@@ -419,6 +429,33 @@ class WeatherForecastComponent(DashboardComponent):
         self.draw_text((255, 255, 255), f"{n} {s} {t} {deg_c:.0f}°")
 
 
+class SunForecastComponent(DashboardComponent):
+    def __init__(self, env_canada, *args, **kwargs):
+        super().__init__(data_resolver=env_canada, *args, **kwargs)
+        self.load_font("5x8")
+
+    def frame_count(self, data):
+        if data == None:
+            return 0
+        else:
+            return 1
+
+    def do_draw(self, now, data, frame):
+        target_tz = pytz.timezone("America/Edmonton") # FIXME: this is copied around in a bunch of places
+
+        sun = data['sun']['type'].capitalize()
+        dt = data['sun']['timestamp'].astimezone(target_tz).strftime("%-I:%M")
+
+        if sun == "Sunrise":
+            color = (255,167,0)
+            self.fill((16, 16, 0))
+        else:
+            color = (80,80,169)
+            self.fill((16, 16, 0))
+
+        self.draw_text(color, f"{sun} at {dt}")
+
+
 class CalendarComponent(DashboardComponent):
     def __init__(self, calendar, *args, **kwargs):
         super().__init__(data_resolver=calendar, *args, **kwargs)
@@ -479,9 +516,6 @@ class CalendarComponent(DashboardComponent):
 # - Add capability for panels to have subpanels, since drawing ops are full panel size
 # - Add something with an icon/image -- maybe the weather forecast
 # New data:
-# - Weather Forecast: Upcoming Rain
-# - Date w/ time -- eg. "Tue 6:53"
-# - Times: Sunrise, Sunset
 # - Power: Usage, Solar Generation
 # - Home Assistant: Back door / Garage door / etc. Open
 # - Google Location: Distance to Mathieu?
@@ -529,6 +563,7 @@ class Clock(SampleBase):
                 AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
                 CalendarComponent(self.calendar, 0, 13, 64, 19, font_path=self.font_path),
                 WeatherForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
+                SunForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
             ],
             time_per_frame=5,
             data_resolver=None,
