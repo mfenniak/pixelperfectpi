@@ -112,10 +112,13 @@ class EnvironmentCanadaDataResolver(DataResolver):
         text_summary = first_forecast.xpath("abbreviatedForecast/textSummary/text()")[0]
         first_temperature = temperatures[0]
 
-        riseset = root.xpath("(/siteData/riseSet/dateTime[@zone='UTC'])[1]")[0]
-        riseset_dt = riseset.xpath("timeStamp/text()")[0]
-        (year, month, day, hour, minute) = (riseset_dt[:4], riseset_dt[4:6], riseset_dt[6:8], riseset_dt[8:10], riseset_dt[10:12])
-        riseset_dt = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), tzinfo=pytz.utc)
+        sunrise = root.xpath("/siteData/riseSet/dateTime[@zone='UTC' and @name='sunrise']/timeStamp/text()")[0]
+        (sunrise_year, sunrise_month, sunrise_day, sunrise_hour, sunrise_minute) = (sunrise[:4], sunrise[4:6], sunrise[6:8], sunrise[8:10], sunrise[10:12])
+        sunrise = datetime.datetime(int(sunrise_year), int(sunrise_month), int(sunrise_day), int(sunrise_hour), int(sunrise_minute), tzinfo=pytz.utc)
+
+        sunset = root.xpath("/siteData/riseSet/dateTime[@zone='UTC' and @name='sunset']/timeStamp/text()")[0]
+        (sunset_year, sunset_month, sunset_day, sunset_hour, sunset_minute) = (sunset[:4], sunset[4:6], sunset[6:8], sunset[8:10], sunset[10:12])
+        sunset = datetime.datetime(int(sunset_year), int(sunset_month), int(sunset_day), int(sunset_hour), int(sunset_minute), tzinfo=pytz.utc)
 
         # Future: precipitation, snowLevel, windChill, uv, wind?
         data = {
@@ -125,10 +128,8 @@ class EnvironmentCanadaDataResolver(DataResolver):
                 "deg_c": float(first_temperature.text),
                 "text_summary": text_summary
             },
-            "sun": {
-                "type": riseset.get("name"),
-                "timestamp": riseset_dt
-            }
+            "sunrise": sunrise,
+            "sunset": sunset,
         }
         return data
 
@@ -443,16 +444,20 @@ class SunForecastComponent(DashboardComponent):
     def do_draw(self, now, data, frame):
         target_tz = pytz.timezone("America/Edmonton") # FIXME: this is copied around in a bunch of places
 
-        sun = data['sun']['type'].capitalize()
-        dt = data['sun']['timestamp'].astimezone(target_tz).strftime("%-I:%M")
+        now = datetime.datetime.now(target_tz)
+        sunrise = data['sunrise']
+        sunset = data['sunset']
 
-        if sun == "Sunrise":
+        if sunrise > now:
+            self.fill((16, 16, 0))
+            sun = "Sunrise"
             color = (255,167,0)
-            self.fill((16, 16, 0))
+            dt = sunrise.astimezone(target_tz).strftime("%-I:%M")
         else:
+            self.fill((20, 17, 15))
+            sun = "Sunset"
             color = (80,80,169)
-            self.fill((16, 16, 0))
-
+            dt = sunset.astimezone(target_tz).strftime("%-I:%M")
         self.draw_text(color, f"{sun} at {dt}")
 
 
