@@ -205,8 +205,11 @@ class DrawPanel(object):
     def load_font(self, name):
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
-    def draw(self, parent_buffer, now, data, frame):
-        self.do_draw(now, data, frame)
+    def frame_count(self, **kwargs):
+        return 1
+
+    def draw(self, parent_buffer, **kwargs):
+        self.do_draw(**kwargs)
         parent_buffer.paste(self.buffer, box=(self.x, self.y))
 
     def fill(self, color):
@@ -309,12 +312,12 @@ class MultiPanelPanel(DrawPanel):
         self.panels = panels
         self.time_per_frame = time_per_frame
 
-    def do_draw(self, now, data, frame):
+    def do_draw(self, now, **kwargs):
         # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
         panel_datas = [x.data_resolver.data for x in self.panels]
 
         # Ask each panel how many frames they will have, considering their data.
-        frame_count = [x.frame_count(panel_datas[i]) for i, x in enumerate(self.panels)]
+        frame_count = [x.frame_count(data=panel_datas[i]) for i, x in enumerate(self.panels)]
 
         # Based upon the total number of frames on all panels, and the time, calculate the active frame.
         total_frames = sum(frame_count)
@@ -337,7 +340,7 @@ class MultiPanelPanel(DrawPanel):
                 break
             running_total += frame_count
 
-        self.panels[target_panel_index].draw(self.buffer, now, data=panel_datas[target_panel_index], frame=target_frame_index)
+        self.panels[target_panel_index].draw(self.buffer, now=now, data=panel_datas[target_panel_index], frame=target_frame_index)
 
 
 class TimeComponent(DrawPanel):
@@ -345,10 +348,7 @@ class TimeComponent(DrawPanel):
         super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
         self.load_font("7x13")
 
-    def frame_count(self, data):
-        return 1
-
-    def do_draw(self, now, data, frame):
+    def do_draw(self, now, **kwargs):
         self.fill((0, 0, 0))
 
         hue = int(now*50 % 360)
@@ -366,10 +366,7 @@ class DayOfWeekComponent(DrawPanel):
         super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
         self.load_font("7x13")
 
-    def frame_count(self, data):
-        return 1
-
-    def do_draw(self, now, data, frame):
+    def do_draw(self, now, **kwargs):
         self.fill((0, 0, 0))
 
         hue = int(now*50 % 360)
@@ -391,7 +388,7 @@ class CurrentTemperatureComponent(DrawPanel):
         else:
             return 1
 
-    def do_draw(self, now, data, frame):
+    def do_draw(self, data, **kwargs):
         self.fill((0, 0, 0))
         if data is None:
             return
@@ -410,7 +407,7 @@ class AqiComponent(DrawPanel):
         else:
             return 1
 
-    def do_draw(self, now, data, frame):
+    def do_draw(self, data, **kwargs):
         self.fill((0, 16, 0))
         (red, green, blue) = data["p25aqic"]
         textColor = (red, green, blue)
@@ -429,7 +426,7 @@ class WeatherForecastComponent(DrawPanel):
         else:
             return 1
 
-    def do_draw(self, now, data, frame):
+    def do_draw(self, data, **kwargs):
         self.fill((16, 0, 0))
         n = data['forecast']['name']
         s = data['forecast']['text_summary']
@@ -449,7 +446,7 @@ class SunForecastComponent(DrawPanel):
         else:
             return 1
 
-    def do_draw(self, now, data, frame):
+    def do_draw(self, now, data, **kwargs):
         target_tz = pytz.timezone("America/Edmonton") # FIXME: this is copied around in a bunch of places
 
         now = datetime.datetime.now(target_tz)
@@ -479,7 +476,7 @@ class CalendarComponent(DrawPanel):
             return 0
         return min(len(data["future_events"]), 3) # no more than this many events
 
-    def do_draw(self, now, data, frame):
+    def do_draw(self, now, data, frame, **kwargs):
         self.fill((0, 0, 16))
 
         # FIXME: color is synced to the time, but, only by copy-and-paste
@@ -591,11 +588,9 @@ class Clock(SampleBase):
                 background_tasks.add(task)
                 task.add_done_callback(background_tasks.discard)
 
-            # FIXME: frame=... should be removed as an input; only MultiPanelPanel
-            # needs that kind of knowledge and it can be internal to it and components used by it
-            time_component.draw(buffer, now, data=None, frame=0)
-            curr_component.draw(buffer, now, data=None, frame=0)
-            lower_panels.draw(buffer, now, data=None, frame=0)
+            time_component.draw(buffer, now=now)
+            curr_component.draw(buffer, now=now)
+            lower_panels.draw(buffer, now=now)
 
             offscreen_canvas.SetImage(buffer, 0, 0)
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
