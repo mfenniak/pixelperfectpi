@@ -450,7 +450,8 @@ class SunForecastComponent(DrawPanel):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
         self.display_tz = display_tz
         self.load_font("5x8")
-        self.sun = Image.open(open('/home/mfenniak/Dev/pixelperfectpi/icons/sun.png', 'rb'))
+        # self.sun = Image.open(open('/home/mfenniak/Dev/pixelperfectpi/icons/sun.png', 'rb'))
+        self.sun = Image.open(open('/home/mfenniak/Dev/pixelperfectpi/icons/Lightning-silk.png', 'rb'))
 
     def frame_count(self, data):
         if data == None:
