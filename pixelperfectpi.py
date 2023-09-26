@@ -56,6 +56,15 @@ class DataResolver(object):
             self.data = None
 
 
+class StaticDataResolver(object):
+    def __init__(self, static_data=None):
+        super().__init__()
+        self.data = static_data
+
+    async def maybe_refresh(self, now):
+        return
+
+
 class PurpleAirDataResolver(DataResolver):
     def __init__(self):
         super().__init__(refresh_interval=60)
@@ -181,7 +190,7 @@ class CalendarDataResolver(DataResolver):
         }
 
 
-class DashboardComponent(object):
+class DrawPanel(object):
     def __init__(self, x, y, w, h, font_path, data_resolver):
         self.x = x
         self.y = y
@@ -196,9 +205,9 @@ class DashboardComponent(object):
     def load_font(self, name):
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
-    def draw(self, canvas, now, data, frame):
+    def draw(self, parent_buffer, now, data, frame):
         self.do_draw(now, data, frame)
-        canvas.SetImage(self.buffer, self.x, self.y)
+        parent_buffer.paste(self.buffer, box=(self.x, self.y))
 
     def fill(self, color):
         self.buffer.paste(color, box=(0,0,self.w,self.h))
@@ -294,17 +303,13 @@ class DashboardComponent(object):
         self.imagedraw.multiline_text((text_x, text_y), new_text, fill=color, font=self.pil_font, spacing=0, align=halign)
 
 
-class ComponentSwappingComponent(DashboardComponent):
+class MultiPanelPanel(DrawPanel):
     def __init__(self, panels, time_per_frame=5, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.panels = panels
         self.time_per_frame = time_per_frame
 
-    # FIXME: this overrides "draw" so that we can pass "canvas" to the subpanel, rather than using the
-    # self.buffer PIL panel.  That's probably "OK" but it would be nice if there wasn't a transition
-    # between different panel types included inside the components, then they could delegate to each
-    # other more cleanly.
-    def draw(self, canvas, now, data, frame):
+    def do_draw(self, now, data, frame):
         # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
         panel_datas = [x.data_resolver.data for x in self.panels]
 
@@ -332,13 +337,16 @@ class ComponentSwappingComponent(DashboardComponent):
                 break
             running_total += frame_count
 
-        self.panels[target_panel_index].draw(canvas, now, data=panel_datas[target_panel_index], frame=target_frame_index)
+        self.panels[target_panel_index].draw(self.buffer, now, data=panel_datas[target_panel_index], frame=target_frame_index)
 
 
-class TimeComponent(DashboardComponent):
+class TimeComponent(DrawPanel):
     def __init__(self, *args, **kwargs):
-        super().__init__(data_resolver=None, *args, **kwargs)
+        super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
         self.load_font("7x13")
+
+    def frame_count(self, data):
+        return 1
 
     def do_draw(self, now, data, frame):
         self.fill((0, 0, 0))
@@ -353,9 +361,9 @@ class TimeComponent(DashboardComponent):
         self.draw_text(color, timestr, halign="right")
 
 
-class DayOfWeekComponent(DashboardComponent):
+class DayOfWeekComponent(DrawPanel):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
         self.load_font("7x13")
 
     def frame_count(self, data):
@@ -372,7 +380,7 @@ class DayOfWeekComponent(DashboardComponent):
         self.draw_text(color, timestr)
 
 
-class CurrentTemperatureComponent(DashboardComponent):
+class CurrentTemperatureComponent(DrawPanel):
     def __init__(self, purpleair, *args, **kwargs):
         super().__init__(data_resolver=purpleair, *args, **kwargs)
         self.load_font("7x13")
@@ -391,7 +399,7 @@ class CurrentTemperatureComponent(DashboardComponent):
         self.draw_text((128,128,128), f"{curr_c:.0f}°")
 
 
-class AqiComponent(DashboardComponent):
+class AqiComponent(DrawPanel):
     def __init__(self, purpleair, *args, **kwargs):
         super().__init__(data_resolver=purpleair, *args, **kwargs)
         self.load_font("7x13")
@@ -410,7 +418,7 @@ class AqiComponent(DashboardComponent):
         self.draw_text(textColor, f"AQI {aqi:.0f}")
 
 
-class WeatherForecastComponent(DashboardComponent):
+class WeatherForecastComponent(DrawPanel):
     def __init__(self, env_canada, *args, **kwargs):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
         self.load_font("4x6")
@@ -430,7 +438,7 @@ class WeatherForecastComponent(DashboardComponent):
         self.draw_text((255, 255, 255), f"{n} {s} {t} {deg_c:.0f}°")
 
 
-class SunForecastComponent(DashboardComponent):
+class SunForecastComponent(DrawPanel):
     def __init__(self, env_canada, *args, **kwargs):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
         self.load_font("5x8")
@@ -461,7 +469,7 @@ class SunForecastComponent(DashboardComponent):
         self.draw_text(color, f"{sun} at {dt}")
 
 
-class CalendarComponent(DashboardComponent):
+class CalendarComponent(DrawPanel):
     def __init__(self, calendar, *args, **kwargs):
         super().__init__(data_resolver=calendar, *args, **kwargs)
         self.load_font("4x6")
@@ -548,13 +556,13 @@ class Clock(SampleBase):
         background_tasks = set()
 
         offscreen_canvas = self.matrix.CreateFrameCanvas()
+        buffer = Image.new("RGB", (offscreen_canvas.width, offscreen_canvas.height))
 
         time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
-        curr_component = ComponentSwappingComponent(
+        curr_component = MultiPanelPanel(
             panels=[
                 CurrentTemperatureComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path),
-                # FIXME: data_resolver here shouldn't be necessary but ComponentSwappingComponent requires it
-                DayOfWeekComponent(0, 0, 29, 13, data_resolver=self.purpleair, font_path=self.font_path),
+                DayOfWeekComponent(0, 0, 29, 13, font_path=self.font_path),
             ],
             time_per_frame=5,
             data_resolver=None,
@@ -563,12 +571,12 @@ class Clock(SampleBase):
         )
 
         # FIXME: repeating the coords over and over again doesn't make much sense
-        lower_panels = ComponentSwappingComponent(
+        lower_panels = MultiPanelPanel(
             panels=[
-                AqiComponent(self.purpleair, 0, 13, 64, 19, font_path=self.font_path),
-                CalendarComponent(self.calendar, 0, 13, 64, 19, font_path=self.font_path),
-                WeatherForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
-                SunForecastComponent(self.envcanada, 0, 13, 64, 19, font_path=self.font_path),
+                AqiComponent(self.purpleair, 0, 0, 64, 19, font_path=self.font_path),
+                CalendarComponent(self.calendar, 0, 0, 64, 19, font_path=self.font_path),
+                WeatherForecastComponent(self.envcanada, 0, 0, 64, 19, font_path=self.font_path),
+                SunForecastComponent(self.envcanada, 0, 0, 64, 19, font_path=self.font_path),
             ],
             time_per_frame=5,
             data_resolver=None,
@@ -583,14 +591,13 @@ class Clock(SampleBase):
                 background_tasks.add(task)
                 task.add_done_callback(background_tasks.discard)
 
-            offscreen_canvas.Clear()
-
-            # FIXME: frame=... should be removed as an input; only ComponentSwappingComponent
+            # FIXME: frame=... should be removed as an input; only MultiPanelPanel
             # needs that kind of knowledge and it can be internal to it and components used by it
-            time_component.draw(offscreen_canvas, now, data=None, frame=0)
-            curr_component.draw(offscreen_canvas, now, data=None, frame=0)
-            lower_panels.draw(offscreen_canvas, now, data=None, frame=0)
+            time_component.draw(buffer, now, data=None, frame=0)
+            curr_component.draw(buffer, now, data=None, frame=0)
+            lower_panels.draw(buffer, now, data=None, frame=0)
 
+            offscreen_canvas.SetImage(buffer, 0, 0)
             offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
             await asyncio.sleep(0.1)
 
