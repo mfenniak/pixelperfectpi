@@ -458,7 +458,7 @@ class SunForecastComponent(DrawPanel):
         sunrise = data['sunrise']
         sunset = data['sunset']
 
-        if sunrise > now and not sunset > now:
+        if sunrise > now and sunrise < sunset:
             self.fill((16, 16, 0))
             sun = "Sunrise"
             color = (255,167,0)
