@@ -10,6 +10,7 @@ import time
 import sys
 import os
 import asyncio
+import pytz
 try:
     import config
 except ModuleNotFoundError:
@@ -45,10 +46,12 @@ class SampleBase(object):
         self.parser.add_argument("--led-no-drop-privs", dest="drop_privileges", help="Don't drop privileges from 'root' after initializing the hardware.", action='store_false')
         self.parser.add_argument("--ical-url", dest="ical_url", help="iCal URL", default=None, type=str)
         self.parser.add_argument("--font-path", dest="font_path", help="path to pil font files", default=None, type=str)
+        self.parser.add_argument("--display-tz", dest="display_tz", help="Timezone to display, IANA notation eg. America/Edmonton", default=None, type=str)
         self.parser.set_defaults(drop_privileges=True)
 
     ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
     font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
+    display_tz = property(lambda self: pytz.timezone(getattr(config, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
 
     def usleep(self, value):
         time.sleep(value / 1000000.0)

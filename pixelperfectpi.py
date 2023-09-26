@@ -144,9 +144,10 @@ class EnvironmentCanadaDataResolver(DataResolver):
 
 
 class CalendarDataResolver(DataResolver):
-    def __init__(self, ical_url):
+    def __init__(self, ical_url, display_tz):
         super().__init__(refresh_interval=3600)
         self.ical_url = ical_url
+        self.display_tz = display_tz
 
     async def fetch_ical(self):
         async with aiohttp.ClientSession() as session:
@@ -161,7 +162,6 @@ class CalendarDataResolver(DataResolver):
         future_events = []
 
         now = datetime.datetime.now(pytz.utc) # datetime.timezone.utc)
-        target_tz = pytz.timezone("America/Edmonton")
         today = datetime.date.today()
 
         start_date = now
@@ -171,12 +171,12 @@ class CalendarDataResolver(DataResolver):
             dtstart = event.get("dtstart").dt
             if isinstance(dtstart, datetime.datetime):
                 if dtstart > now:
-                    future_events.append((dtstart.astimezone(target_tz), str(event.get("SUMMARY"))))
+                    future_events.append((dtstart.astimezone(self.display_tz), str(event.get("SUMMARY"))))
             elif isinstance(dtstart, datetime.date):
                 # Show "today" events until 8am, then move on
-                dtstart_morning = datetime.datetime.combine(dtstart, datetime.time(8, 0, 0)).astimezone(target_tz)
+                dtstart_morning = datetime.datetime.combine(dtstart, datetime.time(8, 0, 0)).astimezone(self.display_tz)
                 if dtstart_morning > now:
-                    start = datetime.datetime.combine(dtstart, datetime.time()).astimezone(target_tz)
+                    start = datetime.datetime.combine(dtstart, datetime.time()).astimezone(self.display_tz)
                     future_events.append((start, str(event.get("SUMMARY"))))
             else:
                 print("unexpected dt type", repr(dtstart))
@@ -191,7 +191,7 @@ class CalendarDataResolver(DataResolver):
 
 
 class DrawPanel(object):
-    def __init__(self, x, y, w, h, font_path, data_resolver):
+    def __init__(self, x, y, w, h, font_path, data_resolver, **kwargs):
         self.x = x
         self.y = y
         self.w = w
@@ -442,8 +442,9 @@ class WeatherForecastComponent(DrawPanel):
 
 
 class SunForecastComponent(DrawPanel):
-    def __init__(self, env_canada, *args, **kwargs):
+    def __init__(self, env_canada, display_tz, *args, **kwargs):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
+        self.display_tz = display_tz
         self.load_font("5x8")
 
     def frame_count(self, data):
@@ -453,9 +454,7 @@ class SunForecastComponent(DrawPanel):
             return 1
 
     def do_draw(self, now, data, **kwargs):
-        target_tz = pytz.timezone("America/Edmonton") # FIXME: this is copied around in a bunch of places
-
-        now = datetime.datetime.now(target_tz)
+        now = datetime.datetime.now(self.display_tz)
         sunrise = data['sunrise']
         sunset = data['sunset']
 
@@ -463,18 +462,19 @@ class SunForecastComponent(DrawPanel):
             self.fill((16, 16, 0))
             sun = "Sunrise"
             color = (255,167,0)
-            dt = sunrise.astimezone(target_tz).strftime("%-I:%M")
+            dt = sunrise.astimezone(self.display_tz).strftime("%-I:%M")
         else:
             self.fill((20, 17, 15))
             sun = "Sunset"
             color = (80,80,169)
-            dt = sunset.astimezone(target_tz).strftime("%-I:%M")
+            dt = sunset.astimezone(self.display_tz).strftime("%-I:%M")
         self.draw_text(color, f"{sun} at {dt}")
 
 
 class CalendarComponent(DrawPanel):
-    def __init__(self, calendar, *args, **kwargs):
+    def __init__(self, calendar, display_tz, *args, **kwargs):
         super().__init__(data_resolver=calendar, *args, **kwargs)
+        self.display_tz = display_tz
         self.load_font("4x6")
 
     def frame_count(self, data):
@@ -493,8 +493,7 @@ class CalendarComponent(DrawPanel):
         (dt, summary) = data["future_events"][frame]
 
         preamble = ""
-        target_tz = pytz.timezone("America/Edmonton")
-        now = datetime.datetime.now(target_tz)
+        now = datetime.datetime.now(self.display_tz)
 
         if dt.time() == datetime.time(0,0,0):
             # full day event probably
@@ -548,7 +547,7 @@ class Clock(SampleBase):
     def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
         self.env_canada = EnvironmentCanadaDataResolver()
-        self.calendar = CalendarDataResolver(self.ical_url)
+        self.calendar = CalendarDataResolver(self.ical_url, self.display_tz)
         self.data_resolvers = [
             self.purpleair,
             self.env_canada,
@@ -561,7 +560,12 @@ class Clock(SampleBase):
         offscreen_canvas = self.matrix.CreateFrameCanvas()
         buffer = Image.new("RGB", (offscreen_canvas.width, offscreen_canvas.height))
 
-        time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
+        addt_config={
+            "font_path": self.font_path,
+            "display_tz": self.display_tz,
+        }
+
+        time_component = TimeComponent(29, 0, 35, 13, **addt_config)
         curr_component = MultiPanelPanel(
             panel_constructors=[
                 lambda **kwargs: CurrentTemperatureComponent(purpleair=self.purpleair, **kwargs),
@@ -569,7 +573,7 @@ class Clock(SampleBase):
             ],
             time_per_frame=5,
             x=0, y=0, w=29, h=13,
-            font_path=self.font_path,
+            **addt_config,
         )
 
         lower_panels = MultiPanelPanel(
@@ -581,7 +585,7 @@ class Clock(SampleBase):
             ],
             time_per_frame=5,
             x=0, y=13, w=64, h=19,
-            font_path=self.font_path,
+            **addt_config,
         )
 
         while True:
