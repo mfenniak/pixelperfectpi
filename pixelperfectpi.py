@@ -307,9 +307,15 @@ class DrawPanel(object):
 
 
 class MultiPanelPanel(DrawPanel):
-    def __init__(self, panels, time_per_frame=5, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.panels = panels
+    def __init__(self, panel_constructors, time_per_frame=5, *args, **kwargs):
+        super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
+        inner_kwargs = kwargs.copy()
+        # same width & height, but don't inherit the x/y position
+        inner_kwargs['x'] = 0
+        inner_kwargs['y'] = 0
+        self.panels = [
+            constructor(**inner_kwargs) for constructor in panel_constructors
+        ]
         self.time_per_frame = time_per_frame
 
     def do_draw(self, now, **kwargs):
@@ -541,11 +547,11 @@ class Clock(SampleBase):
 
     def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
-        self.envcanada = EnvironmentCanadaDataResolver()
+        self.env_canada = EnvironmentCanadaDataResolver()
         self.calendar = CalendarDataResolver(self.ical_url)
         self.data_resolvers = [
             self.purpleair,
-            self.envcanada,
+            self.env_canada,
             self.calendar,
         ]
 
@@ -557,26 +563,23 @@ class Clock(SampleBase):
 
         time_component = TimeComponent(29, 0, 35, 13, font_path=self.font_path)
         curr_component = MultiPanelPanel(
-            panels=[
-                CurrentTemperatureComponent(self.purpleair, 0, 0, 29, 13, font_path=self.font_path),
-                DayOfWeekComponent(0, 0, 29, 13, font_path=self.font_path),
+            panel_constructors=[
+                lambda **kwargs: CurrentTemperatureComponent(purpleair=self.purpleair, **kwargs),
+                lambda **kwargs: DayOfWeekComponent(**kwargs),
             ],
             time_per_frame=5,
-            data_resolver=None,
             x=0, y=0, w=29, h=13,
             font_path=self.font_path,
         )
 
-        # FIXME: repeating the coords over and over again doesn't make much sense
         lower_panels = MultiPanelPanel(
-            panels=[
-                AqiComponent(self.purpleair, 0, 0, 64, 19, font_path=self.font_path),
-                CalendarComponent(self.calendar, 0, 0, 64, 19, font_path=self.font_path),
-                WeatherForecastComponent(self.envcanada, 0, 0, 64, 19, font_path=self.font_path),
-                SunForecastComponent(self.envcanada, 0, 0, 64, 19, font_path=self.font_path),
+            panel_constructors=[
+                lambda **kwargs: AqiComponent(purpleair=self.purpleair, **kwargs),
+                lambda **kwargs: CalendarComponent(calendar=self.calendar, **kwargs),
+                lambda **kwargs: WeatherForecastComponent(env_canada=self.env_canada, **kwargs),
+                lambda **kwargs: SunForecastComponent(env_canada=self.env_canada, **kwargs),
             ],
             time_per_frame=5,
-            data_resolver=None,
             x=0, y=13, w=64, h=19,
             font_path=self.font_path,
         )
