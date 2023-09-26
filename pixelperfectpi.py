@@ -197,7 +197,7 @@ class DrawPanel(object):
         self.w = w
         self.h = h
         self.font_path = font_path
-        self.buffer = Image.new("RGB", (self.w, self.h))
+        self.buffer = Image.new("RGBA", (self.w, self.h))
         self.imagedraw = ImageDraw.Draw(self.buffer)
         self.pil_font = None
         self.data_resolver = data_resolver
@@ -217,28 +217,32 @@ class DrawPanel(object):
 
     # halign - left, center, right
     # valign - top, middle, bottom
-    def draw_text(self, color, text, halign="center", valign="middle"):
+    def draw_text(self, color, text, halign="center", valign="middle", x=0, y=0, w=None, h=None):
         if self.pil_font is None:
             raise Exception("must call load_font first")
+        if w is None:
+            w = self.w
+        if h is None:
+            h = self.h
 
         # measure the total width of the text...
-        (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), text, font=self.pil_font, spacing=0, align="left")
-        if right <= self.w:
+        (left, top, right, bottom) = self.imagedraw.multiline_textbbox((x, y), text, font=self.pil_font, spacing=0, align="left")
+        if right <= w:
             # it will fit in a single-line; nice and easy peasy...
-            text_height = bottom
+            text_height = bottom - top
             if valign == "top":
-                text_y = 0
+                text_y = y
             elif valign == "bottom":
-                text_y = self.h - bottom
+                text_y = h - bottom
             else: # middle
-                text_y = (self.h - text_height) // 2
-            text_width = right
+                text_y = y + ((h - text_height) // 2)
+            text_width = right - left
             if halign == "left":
-                text_x = 0
+                text_x = x
             elif halign == "right":
-                text_x = self.w - text_width
+                text_x = w - text_width
             else: # center
-                text_x = (self.w - text_width) // 2
+                text_x = x + ((w - text_width) // 2)
             self.imagedraw.multiline_text((text_x, text_y), text, fill=color, font=self.pil_font, spacing=0, align=halign)
             return
 
@@ -267,7 +271,7 @@ class DrawPanel(object):
             
             # will "proposed_line" fit onto a line?
             (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), proposed_line, font=self.pil_font, spacing=0, align="left")
-            if right > self.w:
+            if right > w:
                 height_total += bottom
                 # no, proposed_line is too big; we'll make do with the last `line`
                 if line != "":
@@ -290,18 +294,18 @@ class DrawPanel(object):
 
         text_height = height_total
         if valign == "top":
-            text_y = 0
+            text_y = y
         elif valign == "bottom":
-            text_y = max(0, self.h - bottom)
+            text_y = max(0, h - bottom)
         else: # middle
-            text_y = max(0, (self.h - text_height) // 2)
+            text_y = y + max(0, (h - text_height) // 2)
         text_width = widest_line
         if halign == "left":
-            text_x = 0
+            text_x = x
         elif halign == "right":
-            text_x = max(0, self.w - text_width)
+            text_x = max(0, w - text_width)
         else: # center
-            text_x = max(0, (self.w - text_width) // 2)
+            text_x = x + max(0, (w - text_width) // 2)
 
         self.imagedraw.multiline_text((text_x, text_y), new_text, fill=color, font=self.pil_font, spacing=0, align=halign)
 
@@ -446,6 +450,7 @@ class SunForecastComponent(DrawPanel):
         super().__init__(data_resolver=env_canada, *args, **kwargs)
         self.display_tz = display_tz
         self.load_font("5x8")
+        self.sun = Image.open(open('/home/mfenniak/Dev/pixelperfectpi/icons/sun.png', 'rb'))
 
     def frame_count(self, data):
         if data == None:
@@ -458,7 +463,7 @@ class SunForecastComponent(DrawPanel):
         sunrise = data['sunrise']
         sunset = data['sunset']
 
-        if sunrise > now and not sunset > now:
+        if sunrise > now and sunrise < sunset:
             self.fill((16, 16, 0))
             sun = "Sunrise"
             color = (255,167,0)
@@ -468,7 +473,11 @@ class SunForecastComponent(DrawPanel):
             sun = "Sunset"
             color = (80,80,169)
             dt = sunset.astimezone(self.display_tz).strftime("%-I:%M")
-        self.draw_text(color, f"{sun} at {dt}")
+        # self.draw_text(color, f"{sun}", x=self.sun.width, w=self.w - self.sun.width)
+        self.draw_text(color, f"{sun} at {dt}", x=self.sun.width, w=self.w - self.sun.width)
+
+        # (self.h - self.sun.height) / 2
+        self.buffer.alpha_composite(self.sun, (0, (self.h - self.sun.height) // 2))
 
 
 class CalendarComponent(DrawPanel):
@@ -578,8 +587,8 @@ class Clock(SampleBase):
 
         lower_panels = MultiPanelPanel(
             panel_constructors=[
-                lambda **kwargs: AqiComponent(purpleair=self.purpleair, **kwargs),
-                lambda **kwargs: CalendarComponent(calendar=self.calendar, **kwargs),
+                # lambda **kwargs: AqiComponent(purpleair=self.purpleair, **kwargs),
+                # lambda **kwargs: CalendarComponent(calendar=self.calendar, **kwargs),
                 lambda **kwargs: WeatherForecastComponent(env_canada=self.env_canada, **kwargs),
                 lambda **kwargs: SunForecastComponent(env_canada=self.env_canada, **kwargs),
             ],
