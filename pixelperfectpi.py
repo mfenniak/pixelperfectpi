@@ -458,13 +458,12 @@ class SunForecastComponent(DrawPanel):
         sunrise = data['sunrise']
         sunset = data['sunset']
 
+        self.fill((16, 16, 0))
         if sunrise > now and sunrise < sunset:
-            self.fill((16, 16, 0))
             sun = "Sunrise"
             color = (255,167,0)
             dt = sunrise.astimezone(self.display_tz).strftime("%-I:%M")
         else:
-            self.fill((20, 17, 15))
             sun = "Sunset"
             color = (80,80,169)
             dt = sunset.astimezone(self.display_tz).strftime("%-I:%M")
