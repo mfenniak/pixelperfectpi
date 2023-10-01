@@ -21,6 +21,7 @@ import pytz
 import random
 import recurring_ical_events
 import os.path
+import web_control
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -545,6 +546,7 @@ class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.zeroconf = ZeroconfAdvertiser()
+        self.state = "ON"
 
     def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
@@ -556,8 +558,19 @@ class Clock(SampleBase):
             self.calendar,
         ]
 
+    async def turn_on(self):
+        self.state = "ON"
+        await self.status_update(self.state)
+
+    async def turn_off(self):
+        self.state = "OFF"
+        await self.status_update(self.state)
+
     async def run(self):
         await self.zeroconf.start()
+        self.status_update = await web_control.start_server(self)
+
+        asyncio.ensure_future(web_control.test_client())
 
         background_tasks = set()
 
@@ -593,19 +606,24 @@ class Clock(SampleBase):
         )
 
         while True:
-            now = time.time()
-            for data_resolver in self.data_resolvers:
-                task = asyncio.create_task(data_resolver.maybe_refresh(now))
-                background_tasks.add(task)
-                task.add_done_callback(background_tasks.discard)
+            if self.state == "OFF":
+                offscreen_canvas.Clear()
+                offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
+                await asyncio.sleep(1)
+            else:
+                now = time.time()
+                for data_resolver in self.data_resolvers:
+                    task = asyncio.create_task(data_resolver.maybe_refresh(now))
+                    background_tasks.add(task)
+                    task.add_done_callback(background_tasks.discard)
 
-            time_component.draw(buffer, now=now)
-            curr_component.draw(buffer, now=now)
-            lower_panels.draw(buffer, now=now)
+                time_component.draw(buffer, now=now)
+                curr_component.draw(buffer, now=now)
+                lower_panels.draw(buffer, now=now)
 
-            offscreen_canvas.SetImage(buffer, 0, 0)
-            offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
-            await asyncio.sleep(0.1)
+                offscreen_canvas.SetImage(buffer, 0, 0)
+                offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
+                await asyncio.sleep(0.1)
 
 
 # Main function

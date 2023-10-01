@@ -28,6 +28,7 @@
             ps.recurring-ical-events
             ps.zeroconf
             ps.netifaces
+            ps.websockets
           ] ++ ps.lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pythonInterpreter)
         ));
       in rec {
