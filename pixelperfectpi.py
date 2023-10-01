@@ -9,6 +9,7 @@ else:
 from rgbmatrix import font_path
 from lxml import etree
 from PIL import Image, ImageFont, ImageDraw, ImageColor
+from pixel_zeroconf import ZeroconfAdvertiser
 import time
 import asyncio
 import aiohttp
@@ -543,6 +544,7 @@ class CalendarComponent(DrawPanel):
 class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.zeroconf = ZeroconfAdvertiser()
 
     def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
@@ -555,6 +557,8 @@ class Clock(SampleBase):
         ]
 
     async def run(self):
+        await self.zeroconf.start()
+
         background_tasks = set()
 
         offscreen_canvas = self.matrix.CreateFrameCanvas()
