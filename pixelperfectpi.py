@@ -9,6 +9,7 @@ else:
 from rgbmatrix import font_path
 from lxml import etree
 from PIL import Image, ImageFont, ImageDraw, ImageColor
+from pixel_zeroconf import ZeroconfAdvertiser
 import time
 import asyncio
 import aiohttp
@@ -539,46 +540,11 @@ class CalendarComponent(DrawPanel):
 # - Errors from any of the other data collectors / displayers
 # - anxi - Any errors on Prometheus?
 
-from zeroconf import IPVersion, ServiceStateChange, Zeroconf
-from zeroconf.asyncio import (
-    AsyncServiceBrowser,
-    AsyncServiceInfo,
-    AsyncZeroconf,
-    AsyncZeroconfServiceTypes,
-)
-
-
-def async_on_service_state_change(zeroconf, service_type, name, state_change):
-    print(f"Service {name} of type {service_type} state changed: {state_change}")
-    if state_change is not ServiceStateChange.Added:
-        return
-    asyncio.ensure_future(async_display_service_info(zeroconf, service_type, name))
-
-
-async def async_display_service_info(zeroconf, service_type, name):
-    info = AsyncServiceInfo(service_type, name)
-    await info.async_request(zeroconf, 3000)
-    print("Info from zeroconf.get_service_info: %r" % (info))
-    if info:
-        addresses = ["%s:%d" % (addr, cast(int, info.port)) for addr in info.parsed_scoped_addresses()]
-        print("  Name: %s" % name)
-        print("  Addresses: %s" % ", ".join(addresses))
-        print("  Weight: %d, priority: %d" % (info.weight, info.priority))
-        print(f"  Server: {info.server}")
-        if info.properties:
-            print("  Properties are:")
-            for key, value in info.properties.items():
-                print(f"    {key!r}: {value!r}")
-        else:
-            print("  No properties")
-    else:
-        print("  No info")
-    print('\n')
-
 
 class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.zeroconf = ZeroconfAdvertiser()
 
     def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
@@ -591,13 +557,9 @@ class Clock(SampleBase):
         ]
 
     async def run(self):
-        background_tasks = set()
+        await self.zeroconf.start()
 
-        zeroconf = AsyncZeroconf()
-        # browser = AsyncServiceBrowser(zeroconf, "_http._tcp.local.", listener)
-        browser = AsyncServiceBrowser(
-            zeroconf, "_http._tcp.local.", handlers=[async_on_service_state_change]
-        )
+        background_tasks = set()
 
         offscreen_canvas = self.matrix.CreateFrameCanvas()
         buffer = Image.new("RGB", (offscreen_canvas.width, offscreen_canvas.height))
