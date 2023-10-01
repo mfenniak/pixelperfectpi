@@ -21,11 +21,8 @@ class ZeroconfAdvertiser(object):
         info = AsyncServiceInfo(
             type_="_pixelperfectpi._tcp.local.",
             name=f"pixelperfectpi on {hostname}._pixelperfectpi._tcp.local.",
-            # addresses=[socket.inet_aton("127.0.0.1")],
             parsed_addresses=self.get_addrs(),
             port=8080,
-            # properties={'path': '/~paulsm/'},
-            # server=f"zcdemohost-{i}.local.",
         )
         await self.zeroconf.async_register_service(info)
         print("Registered myself as a pixelperfectpi")
