@@ -570,7 +570,7 @@ class Clock(SampleBase):
         await self.zeroconf.start()
         self.status_update = await web_control.start_server(self)
 
-        asyncio.ensure_future(web_control.test_client())
+        # asyncio.ensure_future(web_control.test_client())
 
         background_tasks = set()
 
