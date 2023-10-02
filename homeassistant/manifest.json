@@ -1,14 +1,14 @@
 {
-  "domain": "pixelperfectpi",
-  "name": "Detailed Hello World Push",
-  "codeowners": ["@sillyfrog"],
-  "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://www.home-assistant.io/integrations/detailed_hello_world_push",
-  "homekit": {},
-  "iot_class": "local_push",
-  "requirements": [],
-  "ssdp": [],
-  "version": "0.1.0",
-  "zeroconf": []
+    "domain": "pixelperfectpi",
+    "name": "pixelperfectpi",
+    "codeowners": ["@mfenniak"],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/mfenniak/pixelperfectpi",
+    "homekit": {},
+    "iot_class": "local_push",
+    "requirements": [],
+    "ssdp": [],
+    "version": "0.1.0",
+    "zeroconf": []
 }
