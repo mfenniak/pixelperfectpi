@@ -1,38 +1,19 @@
-"""Platform for sensor integration."""
-
 from homeassistant.components.switch import PLATFORM_SCHEMA, SwitchEntity
 
 from .const import DOMAIN
 
-# See cover.py for more details.
-# Note how both entities for each roller sensor (battry and illuminance) are added at
-# the same time to the same list. This way only a single async_add_devices call is
-# required.
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Add sensors for passed config_entry in HA."""
     hub = hass.data[DOMAIN][config_entry.entry_id]
     async_add_entities([ PipixelperfectSwitch(hub) ])
 
-    # new_devices = []
-    # for roller in hub.rollers:
-    #     new_devices.append(BatterySensor(roller))
-    #     new_devices.append(IlluminanceSensor(roller))
-    # if new_devices:
-    #     async_add_entities(new_devices)
 
-
-# This base class shows the common properties and methods for a sensor as used in this
-# example. See each sensor for further details about properties and methods that
-# have been overridden.
 class PipixelperfectSwitch(SwitchEntity):
-    """Base representation of a Hello World Sensor."""
-
     _attr_should_poll = False
 
     def __init__(self, hub):
-        """Initialize the sensor."""
         self._hub = hub
         self._attr_name = f"pixelperfectpi {self._hub._host}"
+        self._attr_unique_id = f"pixelperfectpi_{self._hub._host}_switch"
         self._status = self._hub.last_status
 
     async def async_added_to_hass(self) -> None:
