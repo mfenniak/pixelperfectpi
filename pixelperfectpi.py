@@ -9,7 +9,6 @@ else:
 from rgbmatrix import font_path
 from lxml import etree
 from PIL import Image, ImageFont, ImageDraw, ImageColor
-from pixel_zeroconf import ZeroconfAdvertiser
 import time
 import asyncio
 import aiohttp
@@ -21,7 +20,6 @@ import pytz
 import random
 import recurring_ical_events
 import os.path
-import web_control
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -545,8 +543,6 @@ class CalendarComponent(DrawPanel):
 class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.zeroconf = ZeroconfAdvertiser()
-        self.state = "ON"
 
     def pre_run(self):
         self.purpleair = PurpleAirDataResolver()
@@ -557,33 +553,14 @@ class Clock(SampleBase):
             self.env_canada,
             self.calendar,
         ]
-
-    async def turn_on(self):
-        self.state = "ON"
-        await self.status_update(self.state)
-
-    async def turn_off(self):
-        self.state = "OFF"
-        await self.status_update(self.state)
-
-    async def run(self):
-        await self.zeroconf.start()
-        self.status_update = await web_control.start_server(self)
-
-        # asyncio.ensure_future(web_control.test_client())
-
-        background_tasks = set()
-
-        offscreen_canvas = self.matrix.CreateFrameCanvas()
-        buffer = Image.new("RGB", (offscreen_canvas.width, offscreen_canvas.height))
+        self.background_tasks = set()
 
         addt_config={
             "font_path": self.font_path,
             "display_tz": self.display_tz,
         }
-
-        time_component = TimeComponent(29, 0, 35, 13, **addt_config)
-        curr_component = MultiPanelPanel(
+        self.time_component = TimeComponent(29, 0, 35, 13, **addt_config)
+        self.curr_component = MultiPanelPanel(
             panel_constructors=[
                 lambda **kwargs: CurrentTemperatureComponent(purpleair=self.purpleair, **kwargs),
                 lambda **kwargs: DayOfWeekComponent(**kwargs),
@@ -592,8 +569,7 @@ class Clock(SampleBase):
             x=0, y=0, w=29, h=13,
             **addt_config,
         )
-
-        lower_panels = MultiPanelPanel(
+        self.lower_panels = MultiPanelPanel(
             panel_constructors=[
                 lambda **kwargs: AqiComponent(purpleair=self.purpleair, **kwargs),
                 lambda **kwargs: CalendarComponent(calendar=self.calendar, **kwargs),
@@ -605,25 +581,25 @@ class Clock(SampleBase):
             **addt_config,
         )
 
-        while True:
-            if self.state == "OFF":
-                offscreen_canvas.Clear()
-                offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
-                await asyncio.sleep(1)
-            else:
-                now = time.time()
-                for data_resolver in self.data_resolvers:
-                    task = asyncio.create_task(data_resolver.maybe_refresh(now))
-                    background_tasks.add(task)
-                    task.add_done_callback(background_tasks.discard)
+    async def create_canvas(self, matrix):
+        self.offscreen_canvas = matrix.CreateFrameCanvas()
+        self.buffer = Image.new("RGB", (self.offscreen_canvas.width, self.offscreen_canvas.height))
 
-                time_component.draw(buffer, now=now)
-                curr_component.draw(buffer, now=now)
-                lower_panels.draw(buffer, now=now)
+    async def update_data(self):
+        now = time.time()
+        for data_resolver in self.data_resolvers:
+            task = asyncio.create_task(data_resolver.maybe_refresh(now))
+            self.background_tasks.add(task)
+            task.add_done_callback(self.background_tasks.discard)
 
-                offscreen_canvas.SetImage(buffer, 0, 0)
-                offscreen_canvas = self.matrix.SwapOnVSync(offscreen_canvas)
-                await asyncio.sleep(0.1)
+    async def draw_frame(self, matrix):
+        now = time.time()
+        self.time_component.draw(self.buffer, now=now)
+        self.curr_component.draw(self.buffer, now=now)
+        self.lower_panels.draw(self.buffer, now=now)
+        self.offscreen_canvas.SetImage(self.buffer, 0, 0)
+
+        self.offscreen_canvas = matrix.SwapOnVSync(self.offscreen_canvas)
 
 
 # Main function

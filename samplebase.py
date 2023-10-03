@@ -21,6 +21,9 @@ if EMULATED:
 else:
     from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
+from pixel_zeroconf import ZeroconfAdvertiser
+import web_control
+
 
 class SampleBase(object):
     def __init__(self, *args, **kwargs):
@@ -49,6 +52,10 @@ class SampleBase(object):
         self.parser.add_argument("--display-tz", dest="display_tz", help="Timezone to display, IANA notation eg. America/Edmonton", default=None, type=str)
         self.parser.set_defaults(drop_privileges=True)
 
+        self.zeroconf = ZeroconfAdvertiser()
+        self.state = "ON"
+        self.turn_on_event = None
+
     ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
     font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
     display_tz = property(lambda self: pytz.timezone(getattr(config, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
@@ -57,7 +64,17 @@ class SampleBase(object):
         time.sleep(value / 1000000.0)
 
     async def run(self):
-        print("Running")
+        raise NotImplemented()
+
+    async def turn_on(self):
+        self.state = "ON"
+        self.turn_on_event.set()
+        await self.status_update(self.state)
+
+    async def turn_off(self):
+        self.turn_on_event = asyncio.Event()
+        self.state = "OFF"
+        await self.status_update(self.state)
 
     def process(self):
         self.args = self.parser.parse_args()
@@ -90,15 +107,36 @@ class SampleBase(object):
         if not self.args.drop_privileges:
             options.drop_privileges=False
 
-        self.matrix = RGBMatrix(options = options)
-
+        self.rgbmatrixOptions = options
+        self.matrix = None
         try:
             # Start loop
             print("Press CTRL-C to stop sample")
-            self.pre_run()
-            asyncio.run(self.run())
+            asyncio.run(self.async_run())
         except KeyboardInterrupt:
             print("Exiting\n")
             sys.exit(0)
 
-        return True
+    async def async_run(self):
+        await self.zeroconf.start()
+        self.status_update = await web_control.start_server(self)
+        self.pre_run()
+        await self.main_loop()
+
+    async def main_loop(self):
+        while True:
+            if self.state == "OFF":
+                if self.matrix is not None:
+                    self.matrix.Clear()
+                    del self.matrix
+                    self.matrix = None
+                # FIXME: run update_data in the off state too, but less often
+                await self.turn_on_event.wait()
+            elif self.state == "ON":
+                if self.matrix is None:
+                    self.matrix = RGBMatrix(options = self.rgbmatrixOptions)
+                    await self.create_canvas(self.matrix)
+
+                await self.update_data()
+                await self.draw_frame(self.matrix)
+                await asyncio.sleep(0.1)
