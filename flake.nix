@@ -41,6 +41,7 @@
           version = "0.1";
           src = ./.;
           propagatedBuildInputs = [] ++ ((pythonPackages pkgs.${python}) pkgs.${python}.pkgs);
+          doCheck = false; # unit tests fail due to home assistant component's presence
         };
 
         devShells.default = pkgs.mkShell {
