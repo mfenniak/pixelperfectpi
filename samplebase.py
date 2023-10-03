@@ -125,18 +125,25 @@ class SampleBase(object):
 
     async def main_loop(self):
         while True:
+            await self.update_data()
+
             if self.state == "OFF":
                 if self.matrix is not None:
                     self.matrix.Clear()
                     del self.matrix
                     self.matrix = None
-                # FIXME: run update_data in the off state too, but less often
-                await self.turn_on_event.wait()
+
+                # Wake when we're turned on...
+                turn_on_event_task = asyncio.create_task(self.turn_on_event.wait())
+                # Wake after a bit just to do an update_data call...
+                sleep_task = asyncio.create_task(asyncio.sleep(120))
+                # Wait until either wake condition; doesn't matter which.
+                await asyncio.wait([ turn_on_event_task, sleep_task ], return_when=asyncio.FIRST_COMPLETED)
+
             elif self.state == "ON":
                 if self.matrix is None:
                     self.matrix = RGBMatrix(options = self.rgbmatrixOptions)
                     await self.create_canvas(self.matrix)
 
-                await self.update_data()
                 await self.draw_frame(self.matrix)
                 await asyncio.sleep(0.1)
