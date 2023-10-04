@@ -508,7 +508,7 @@ class CalendarComponent(DrawPanel):
         else:
             # timed event
             if dt.date() == now.date():
-                preamble = dt.strftime("%-I%p")
+                preamble = dt.strftime("%-I:%M%p").replace(":00", "")
             elif dt.date() == (now + datetime.timedelta(days=1)).date():
                 preamble = dt.strftime("tmw %-I%p")
             elif (dt - now) < datetime.timedelta(days=7):
