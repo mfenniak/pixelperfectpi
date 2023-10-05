@@ -15,14 +15,12 @@ try:
     import config
 except ModuleNotFoundError:
     config = object()
+import mqtt
 
 if EMULATED:
     from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
 else:
     from rgbmatrix import RGBMatrix, RGBMatrixOptions
-
-from pixel_zeroconf import ZeroconfAdvertiser
-import web_control
 
 
 class SampleBase(object):
@@ -52,7 +50,8 @@ class SampleBase(object):
         self.parser.add_argument("--display-tz", dest="display_tz", help="Timezone to display, IANA notation eg. America/Edmonton", default=None, type=str)
         self.parser.set_defaults(drop_privileges=True)
 
-        self.zeroconf = ZeroconfAdvertiser()
+        mqtt.config_arg_parser(self.parser)
+
         self.state = "ON"
         self.turn_on_event = None
 
@@ -67,14 +66,18 @@ class SampleBase(object):
         raise NotImplemented()
 
     async def turn_on(self):
+        if self.state == "ON":
+            return
         self.state = "ON"
         self.turn_on_event.set()
-        await self.status_update(self.state)
+        await self.mqtt.status_update(self.state)
 
     async def turn_off(self):
+        if self.state == "OFF":
+            return
         self.turn_on_event = asyncio.Event()
         self.state = "OFF"
-        await self.status_update(self.state)
+        await self.mqtt.status_update(self.state)
 
     def process(self):
         self.args = self.parser.parse_args()
@@ -107,6 +110,9 @@ class SampleBase(object):
         if not self.args.drop_privileges:
             options.drop_privileges=False
 
+        mqtt_config = mqtt.get_config(self.args)
+        self.mqtt = mqtt.MqttServer(mqtt_config, self)
+
         self.rgbmatrixOptions = options
         self.matrix = None
         try:
@@ -118,8 +124,7 @@ class SampleBase(object):
             sys.exit(0)
 
     async def async_run(self):
-        await self.zeroconf.start()
-        self.status_update = await web_control.start_server(self)
+        self.mqtt.start()
         self.pre_run()
         await self.main_loop()
 

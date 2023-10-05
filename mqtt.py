@@ -2,74 +2,158 @@ import json
 import traceback
 import asyncio
 from asyncio_mqtt import Client
+from dataclasses import dataclass
 import backoff
 import socket
+import os
+import config
+import logging
 
-# MQTT_BROKER = 'mqtt_broker_address'
-# MQTT_PORT = 1883
-# MQTT_USERNAME = 'your_username'
-# MQTT_PASSWORD = 'your_password'
-# MQTT_TOPIC_CMD = 'homeassistant/switch/clock/cmd'
-# MQTT_TOPIC_STATE = 'homeassistant/switch/clock/state'
+logging.getLogger('backoff').addHandler(logging.StreamHandler())
 
-@backoff.on_exception(backoff.expo, Exception)  # Catch all exceptions
-async def connect_and_listen_mqtt(clock):
-    client = Client(
-        host=MQTT_BROKER,
-        port=MQTT_PORT,
-        username=MQTT_USERNAME,
-        password=MQTT_PASSWORD
-    )
+@dataclass
+class MqttConfig:
+    hostname: str | None # None - mqtt disabled
+    port: int
+    username: str | None
+    password: str | None
 
-    async with client:
-        # Subscribe to the topic where we'll receive commands for the switch
-        await client.subscribe(MQTT_TOPIC_CMD)
+    discovery_prefix: str | None  # None - discovery disabled
+    discovery_node_id: str | None
+    discovery_object_id: str | None
 
-        async for message in client.filtered_messages(MQTT_TOPIC_CMD):
-            cmd = message.payload.decode().upper()
 
-            if cmd == "ON":
-                await clock.turn_on()
-                await send_status(client, "ON")
-            elif cmd == "OFF":
-                await clock.turn_off()
-                await send_status(client, "OFF")
+def get_discovery_topic(config: MqttConfig):
+    return f"{config.discovery_prefix}/switch/{config.discovery_node_id}/{config.discovery_object_id}/config"
 
-async def send_status(client, status):
-    # Send status updates to the state topic
-    await client.publish(MQTT_TOPIC_STATE, status, qos=1)
+def get_state_topic(config: MqttConfig):
+    return f"{config.discovery_prefix}/{config.discovery_node_id}/{config.discovery_object_id}/state"
 
-async def start_mqtt(clock):
-    try:
-        await connect_and_listen_mqtt(clock)
-    except Exception as e:
-        print(f"Failed to connect or process messages after retries: {e}")
+def get_cmd_topic(config: MqttConfig):
+    return f"{config.discovery_prefix}/{config.discovery_node_id}/{config.discovery_object_id}/cmd"
+
+def get_availability_topic(config: MqttConfig):
+    return f"{config.discovery_prefix}/{config.discovery_node_id}/{config.discovery_object_id}/available"
+
+def get_discovery_payload(config: MqttConfig):
+    return {
+        "name": config.discovery_object_id,
+        "unique_id": f"pixelperfectpi_{config.discovery_object_id}",
+        "state_topic": get_state_topic(config),
+        "command_topic": get_cmd_topic(config),
+        "availability_topic": get_availability_topic(config),
+        "device": {
+            "identifiers": [config.discovery_object_id],
+            "name": "pixelperfectpi"
+        }
+    }
+
+
+class MqttServer(object):
+    def __init__(self, config, clock):
+        self.config = config
+        self.clock = clock
+        self.client = None
+
+    def start(self):
+        if self.config.hostname is None:
+            return
+        asyncio.create_task(self.serve_forever())
+
+    async def serve_forever(self):
+        while True:
+            try:
+                await self.connect_and_listen_mqtt()
+            except Exception as e:
+                print("Exception starting up connect_and_listen_mqtt", e)
+
+    @backoff.on_exception(backoff.expo, Exception)  # Catch all exceptions
+    async def connect_and_listen_mqtt(self):
+        client = Client(
+            hostname=self.config.hostname,
+            port=self.config.port,
+            username=self.config.username,
+            password=self.config.password
+        )
+        async with client:
+            self.client = client
+            await self.status_update(self.clock.state)
+
+            try:
+                if self.config.discovery_prefix is not None:
+                    await client.publish(
+                        get_discovery_topic(self.config),
+                        json.dumps(get_discovery_payload(self.config)),
+                        qos=1, retain=True)
+
+                await client.publish(
+                    get_availability_topic(self.config),
+                    "online",
+                    qos=1, retain=True)
+
+                async with client.messages() as messages:
+                    # Subscribe to the topic where we'll receive commands for the switch
+                    await client.subscribe(get_cmd_topic(self.config))
+                    async for message in messages:
+                        cmd = message.payload.decode().upper()
+                        if cmd == "ON":
+                            await self.clock.turn_on()
+                        elif cmd == "OFF":
+                            await self.clock.turn_off()
+            finally:
+                self.client = None
+                await client.publish(
+                    get_availability_topic(self.config),
+                    "offline",
+                    qos=1, retain=True)
+    
+    async def status_update(self, state):
+        if self.client is None:
+            return
+        await self.client.publish(get_state_topic(self.config), state, qos=1, retain=True)
+
 
 def config_arg_parser(parser):
     parser.add_argument("--mqtt-host",
         help="MQTT hostname",
-        optional=True,
-        default=os.environ.get("MQTT_HOST"),
+        default=os.environ.get("MQTT_HOST", getattr(config, "MQTT_HOST", None)),
         type=str)
     parser.add_argument("--mqtt-port",
         help="MQTT port",
-        optional=True,
-        default=os.environ.get("MQTT_PORT",
-        1883),
+        default=os.environ.get("MQTT_PORT", getattr(config, "MQTT_PORT", 1883)),
         type=int)
     parser.add_argument("--mqtt-username",
         help="MQTT username",
-        optional=True,
-        default=os.environ.get("MQTT_USERNAME"),
+        default=os.environ.get("MQTT_USERNAME", getattr(config, "MQTT_USERNAME", None)),
         type=str)
     parser.add_argument("--mqtt-password",
         help="MQTT password",
-        optional=True,
-        default=os.environ.get("MQTT_PASSWORD"),
+        default=os.environ.get("MQTT_PASSWORD", getattr(config, "MQTT_PASSWORD", None)),
         type=str)
     parser.add_argument(
-        "--mqtt-topic-prefix",
-        help="MQTT topic prefix",
-        optional=True,
-        default=os.environ.get("MQTT_TOPIC_PREFIX", f"pixelperfectpi/{socket.gethostname()}/"),
+        "--mqtt-discovery-prefix",
+        help="MQTT discovery prefix",
+        default=os.environ.get("MQTT_DISCOVERY_PREFIX", getattr(config, "MQTT_DISCOVERY_PREFIX", "homeassistant")),
         type=str)
+    parser.add_argument(
+        "--mqtt-discovery-node-id",
+        help="MQTT discovery node id",
+        default=os.environ.get("MQTT_DISCOVERY_NODE_ID", getattr(config, "MQTT_DISCOVERY_NODE_ID", "pixelperfectpi")),
+        type=str)
+    parser.add_argument(
+        "--mqtt-discovery-object-id",
+        help="MQTT discovery object id",
+        default=os.environ.get("MQTT_DISCOVERY_OBJECT_ID", getattr(config, "MQTT_DISCOVERY_OBJECT_ID", socket.gethostname())),
+        type=str)
+
+
+def get_config(args):
+    return MqttConfig(
+        hostname=args.mqtt_host,
+        port=args.mqtt_port,
+        username=args.mqtt_username,
+        password=args.mqtt_password,
+        discovery_prefix=args.mqtt_discovery_prefix,
+        discovery_node_id=args.mqtt_discovery_node_id,
+        discovery_object_id=args.mqtt_discovery_object_id,
+    )
