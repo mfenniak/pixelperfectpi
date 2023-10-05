@@ -51,6 +51,7 @@ class Clock(object):
 
                 if send_queue_get.done():
                     send_msg = send_queue_get.result()
+                    LOGGER.debug("%s: get from send_queue: %r; transmitting", self._name, send_msg)
                     await websocket.send(json.dumps(send_msg))
                     send_queue_get = asyncio.create_task(self.send_queue.get())
                 
@@ -59,11 +60,15 @@ class Clock(object):
                     websocket_recv = asyncio.create_task(websocket.recv())
 
                     msg = json.loads(recv_msg)
+                    LOGGER.debug("%s: recv from websocket: %r", self._name, msg)
                     cmd_id = msg.get("cmd_id")
                     if cmd_id is not None:
+                        LOGGER.debug("%s: recv has cmd_id=%s", self._name, cmd_id)
                         fut = self.waiting_cmds.get(cmd_id)
+                        LOGGER.debug("%s: recv found matching fut=%r", self._name, fut)
                         if fut is not None:
                             del self.waiting_cmds[cmd_id]
+                            LOGGER.debug("%s: fut set_result(%r)", self._name, msg)
                             fut.set_result(msg)
                     elif msg.get("event", False):
                         await self.fire_event(msg)
@@ -90,11 +95,18 @@ class Clock(object):
         cmd_id = uuid.uuid4().hex
         fut = asyncio.Future()
         self.waiting_cmds[cmd_id] = fut
+        LOGGER.debug("%s/%s: dropping cmd into send_queue...", self._name, cmd_id)
         await self.send_queue.put({ "cmd_id": cmd_id, "cmd": cmd })
+        LOGGER.debug("%s/%s: waiting for fut...", self._name, cmd_id)
         await fut
+        LOGGER.debug("%s/%s: got fut result; completed send_cmd", self._name, cmd_id)
 
     async def turn_on(self):
+        LOGGER.debug("%s: start turn_on", self._name)
         await self.send_cmd("ON")
+        LOGGER.debug("%s: finish turn_on", self._name)
 
     async def turn_off(self):
+        LOGGER.debug("%s: start turn_off", self._name)
         await self.send_cmd("OFF")
+        LOGGER.debug("%s: finish turn_off", self._name)
