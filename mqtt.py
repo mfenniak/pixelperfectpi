@@ -48,12 +48,16 @@ def get_discovery_payload(config: MqttConfig):
         }
     }
 
+def on_runtime_error(e):
+    # give up when we have a RuntimeError because that can include the asyncio event loop shutting down
+    return isinstance(e, RuntimeError)
 
 class MqttServer(object):
-    def __init__(self, config, clock):
+    def __init__(self, config, clock, shutdown_event):
         self.config = config
         self.clock = clock
-        self.client = None
+        self.shutdown_event = shutdown_event
+        self.status_update_queue = asyncio.Queue()
 
     def start(self):
         if self.config.hostname is None:
@@ -61,13 +65,13 @@ class MqttServer(object):
         asyncio.create_task(self.serve_forever())
 
     async def serve_forever(self):
-        while True:
+        while not self.shutdown_event.is_set():
             try:
                 await self.connect_and_listen_mqtt()
             except Exception as e:
                 print("Exception starting up connect_and_listen_mqtt", e)
 
-    @backoff.on_exception(backoff.expo, Exception)  # Catch all exceptions
+    @backoff.on_exception(backoff.expo, Exception, giveup=on_runtime_error, raise_on_giveup=False)  # Catch all exceptions
     async def connect_and_listen_mqtt(self):
         client = Client(
             hostname=self.config.hostname,
@@ -76,41 +80,61 @@ class MqttServer(object):
             password=self.config.password
         )
         async with client:
-            self.client = client
             await self.status_update(self.clock.state)
 
             try:
-                if self.config.discovery_prefix is not None:
-                    await client.publish(
-                        get_discovery_topic(self.config),
-                        json.dumps(get_discovery_payload(self.config)),
-                        qos=1, retain=True)
-
-                await client.publish(
-                    get_availability_topic(self.config),
-                    "online",
-                    qos=1, retain=True)
-
-                async with client.messages() as messages:
-                    # Subscribe to the topic where we'll receive commands for the switch
-                    await client.subscribe(get_cmd_topic(self.config))
-                    async for message in messages:
-                        cmd = message.payload.decode().upper()
-                        if cmd == "ON":
-                            await self.clock.turn_on()
-                        elif cmd == "OFF":
-                            await self.clock.turn_off()
+                await self.publish_discovery(client)
+                await self.publish_availability(client, "online")
+                await self.process_messages_forever(client)
             finally:
-                self.client = None
-                await client.publish(
-                    get_availability_topic(self.config),
-                    "offline",
-                    qos=1, retain=True)
+                try:
+                    await self.publish_availability(client, "offline")
+                except:
+                    # Best effort -- ignore any errors
+                    pass
+
+    async def publish_discovery(self, client):
+        if self.config.discovery_prefix is None:
+            return
+        await client.publish(
+            get_discovery_topic(self.config),
+            json.dumps(get_discovery_payload(self.config)),
+            qos=1, retain=True)
+
+    async def publish_availability(self, client, availability):
+        await client.publish(
+            get_availability_topic(self.config),
+            availability,
+            qos=1, retain=True)
+
+    async def process_messages_forever(self, client):
+        async with client.messages() as messages:
+            # Subscribe to the topic where we'll receive commands for the switch
+            await client.subscribe(get_cmd_topic(self.config))
+
+            messages_next = asyncio.create_task(anext(messages))
+            status_update = asyncio.create_task(self.status_update_queue.get())
+            shutdown_wait = asyncio.create_task(self.shutdown_event.wait())
+
+            while not self.shutdown_event.is_set():
+                aws = [ messages_next, status_update, shutdown_wait ]
+                await asyncio.wait(aws, return_when=asyncio.FIRST_COMPLETED)
+
+                if messages_next.done():
+                    cmd = messages_next.result().payload.decode().upper()
+                    if cmd == "ON":
+                        await self.clock.turn_on()
+                    elif cmd == "OFF":
+                        await self.clock.turn_off()
+                    messages_next = asyncio.create_task(anext(messages))
+
+                if status_update.done():
+                    status = status_update.result()
+                    await client.publish(get_state_topic(self.config), status, qos=1, retain=True)
+                    status_update = asyncio.create_task(self.status_update_queue.get())
     
     async def status_update(self, state):
-        if self.client is None:
-            return
-        await self.client.publish(get_state_topic(self.config), state, qos=1, retain=True)
+        await self.status_update_queue.put(state)
 
 
 def config_arg_parser(parser):

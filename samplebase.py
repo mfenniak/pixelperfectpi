@@ -54,6 +54,7 @@ class SampleBase(object):
 
         self.state = "ON"
         self.turn_on_event = None
+        self.shutdown_event = asyncio.Event()
 
     ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
     font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
@@ -111,7 +112,7 @@ class SampleBase(object):
             options.drop_privileges=False
 
         mqtt_config = mqtt.get_config(self.args)
-        self.mqtt = mqtt.MqttServer(mqtt_config, self)
+        self.mqtt = mqtt.MqttServer(mqtt_config, self, self.shutdown_event)
 
         self.rgbmatrixOptions = options
         self.matrix = None
@@ -120,6 +121,7 @@ class SampleBase(object):
             print("Press CTRL-C to stop sample")
             asyncio.run(self.async_run())
         except KeyboardInterrupt:
+            self.shutdown_event.set()
             print("Exiting\n")
             sys.exit(0)
 
