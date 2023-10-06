@@ -28,7 +28,7 @@ else:
 
 
 class SampleBase(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self) -> None:
         self.parser = argparse.ArgumentParser()
 
         self.parser.add_argument("-r", "--led-rows", action="store", help="Display rows. 16 for 16x32, 32 for 32x32. Default: 32", default=32, type=int)
@@ -57,22 +57,20 @@ class SampleBase(object):
         mqtt.config_arg_parser(self.parser)
 
         self.state: Literal["ON"] | Literal["OFF"] = "ON"
-        self.turn_on_event = None
+        self.turn_on_event: asyncio.Event | None = None
         self.shutdown_event = asyncio.Event()
 
     ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
     font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
     display_tz = property(lambda self: pytz.timezone(getattr(config, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
 
-    def usleep(self, value):
-        time.sleep(value / 1000000.0)
-
-    async def run(self):
-        raise NotImplemented()
+    async def run(self) -> None:
+        raise NotImplemented
 
     async def turn_on(self) -> None:
         if self.state == "ON":
             return
+        assert self.turn_on_event is not None
         self.state = "ON"
         self.turn_on_event.set()
         await self.mqtt.status_update(self.state)
@@ -80,11 +78,12 @@ class SampleBase(object):
     async def turn_off(self) -> None:
         if self.state == "OFF":
             return
+        assert self.turn_on_event is None
         self.turn_on_event = asyncio.Event()
         self.state = "OFF"
         await self.mqtt.status_update(self.state)
 
-    def process(self):
+    def process(self) -> None:
         self.args = self.parser.parse_args()
 
         options = RGBMatrixOptions()
@@ -129,12 +128,24 @@ class SampleBase(object):
             print("Exiting\n")
             sys.exit(0)
 
-    async def async_run(self):
+    def pre_run(self) -> None:
+        raise NotImplemented
+
+    async def update_data(self) -> None:
+        raise NotImplemented
+
+    async def create_canvas(self, matrix: RGBMatrix) -> None:
+        raise NotImplemented
+
+    async def draw_frame(self, matrix: RGBMatrix) -> None:
+        raise NotImplemented
+
+    async def async_run(self) -> None:
         self.mqtt.start()
         self.pre_run()
         await self.main_loop()
 
-    async def main_loop(self):
+    async def main_loop(self) -> None:
         while True:
             await self.update_data()
 
@@ -145,6 +156,7 @@ class SampleBase(object):
                     self.matrix = None
 
                 # Wake when we're turned on...
+                assert self.turn_on_event is not None
                 turn_on_event_task = asyncio.create_task(self.turn_on_event.wait())
                 # Wake after a bit just to do an update_data call...
                 sleep_task = asyncio.create_task(asyncio.sleep(120))

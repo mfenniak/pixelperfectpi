@@ -10,6 +10,7 @@ import socket
 import os
 import types
 import logging
+import argparse
 
 config: object | types.ModuleType = object()
 try:
@@ -148,7 +149,7 @@ class MqttServer(object):
         await self.status_update_queue.put(state)
 
 
-def config_arg_parser(parser):
+def config_arg_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mqtt-host",
         help="MQTT hostname",
         default=os.environ.get("MQTT_HOST", getattr(config, "MQTT_HOST", None)),
@@ -182,7 +183,7 @@ def config_arg_parser(parser):
         type=str)
 
 
-def get_config(args):
+def get_config(args: argparse.Namespace) -> MqttConfig:
     return MqttConfig(
         hostname=args.mqtt_host,
         port=args.mqtt_port,
