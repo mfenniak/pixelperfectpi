@@ -16,7 +16,7 @@ import mqtt
 
 config: object | types.ModuleType = object()
 try:
-    import config
+    import config # type: ignore
 except ModuleNotFoundError:
     config = object()
 
