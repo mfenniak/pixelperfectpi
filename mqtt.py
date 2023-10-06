@@ -3,6 +3,8 @@ import traceback
 import asyncio
 from aiomqtt import Client
 from dataclasses import dataclass
+from typing import Any, Literal
+from samplebase import SampleBase
 import backoff
 import socket
 import os
@@ -29,19 +31,19 @@ class MqttConfig:
     discovery_object_id: str | None
 
 
-def get_discovery_topic(config: MqttConfig):
+def get_discovery_topic(config: MqttConfig) -> str:
     return f"{config.discovery_prefix}/switch/{config.discovery_node_id}/{config.discovery_object_id}/config"
 
-def get_state_topic(config: MqttConfig):
+def get_state_topic(config: MqttConfig) -> str:
     return f"{config.discovery_prefix}/{config.discovery_node_id}/{config.discovery_object_id}/state"
 
-def get_cmd_topic(config: MqttConfig):
+def get_cmd_topic(config: MqttConfig) -> str:
     return f"{config.discovery_prefix}/{config.discovery_node_id}/{config.discovery_object_id}/cmd"
 
-def get_availability_topic(config: MqttConfig):
+def get_availability_topic(config: MqttConfig) -> str:
     return f"{config.discovery_prefix}/{config.discovery_node_id}/{config.discovery_object_id}/available"
 
-def get_discovery_payload(config: MqttConfig):
+def get_discovery_payload(config: MqttConfig) -> dict[str, Any]:
     return {
         "name": config.discovery_object_id,
         "unique_id": f"pixelperfectpi_{config.discovery_object_id}",
@@ -54,23 +56,23 @@ def get_discovery_payload(config: MqttConfig):
         }
     }
 
-def on_runtime_error(e):
+def on_runtime_error(e: Exception) -> bool:
     # give up when we have a RuntimeError because that can include the asyncio event loop shutting down
     return isinstance(e, RuntimeError)
 
 class MqttServer(object):
-    def __init__(self, config, clock, shutdown_event):
+    def __init__(self, config: MqttConfig, clock: SampleBase, shutdown_event: asyncio.Event):
         self.config = config
         self.clock = clock
         self.shutdown_event = shutdown_event
-        self.status_update_queue = asyncio.Queue()
+        self.status_update_queue: asyncio.Queue[str] = asyncio.Queue()
 
-    def start(self):
+    def start(self) -> None:
         if self.config.hostname is None:
             return
         asyncio.create_task(self.serve_forever())
 
-    async def serve_forever(self):
+    async def serve_forever(self) -> None:
         while not self.shutdown_event.is_set():
             try:
                 await self.connect_and_listen_mqtt()
@@ -78,7 +80,8 @@ class MqttServer(object):
                 print("Exception starting up connect_and_listen_mqtt", e)
 
     @backoff.on_exception(backoff.expo, Exception, giveup=on_runtime_error, raise_on_giveup=False)  # Catch all exceptions
-    async def connect_and_listen_mqtt(self):
+    async def connect_and_listen_mqtt(self) -> None:
+        assert self.config.hostname is not None
         client = Client(
             hostname=self.config.hostname,
             port=self.config.port,
@@ -99,7 +102,7 @@ class MqttServer(object):
                     # Best effort -- ignore any errors
                     pass
 
-    async def publish_discovery(self, client):
+    async def publish_discovery(self, client: Client) -> None:
         if self.config.discovery_prefix is None:
             return
         await client.publish(
@@ -107,18 +110,19 @@ class MqttServer(object):
             json.dumps(get_discovery_payload(self.config)),
             qos=1, retain=True)
 
-    async def publish_availability(self, client, availability):
+    async def publish_availability(self, client: Client, availability: Literal["online"] | Literal["offline"]) -> None:
         await client.publish(
             get_availability_topic(self.config),
             availability,
             qos=1, retain=True)
 
-    async def process_messages_forever(self, client):
+    async def process_messages_forever(self, client: Client) -> None:
         async with client.messages() as messages:
             # Subscribe to the topic where we'll receive commands for the switch
             await client.subscribe(get_cmd_topic(self.config))
 
-            messages_next = asyncio.create_task(anext(messages))
+            # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
+            messages_next = asyncio.create_task(anext(messages)) # type: ignore
             status_update = asyncio.create_task(self.status_update_queue.get())
             shutdown_wait = asyncio.create_task(self.shutdown_event.wait())
 
@@ -132,14 +136,15 @@ class MqttServer(object):
                         await self.clock.turn_on()
                     elif cmd == "OFF":
                         await self.clock.turn_off()
-                    messages_next = asyncio.create_task(anext(messages))
+                    # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
+                    messages_next = asyncio.create_task(anext(messages)) # type: ignore
 
                 if status_update.done():
                     status = status_update.result()
                     await client.publish(get_state_topic(self.config), status, qos=1, retain=True)
                     status_update = asyncio.create_task(self.status_update_queue.get())
     
-    async def status_update(self, state):
+    async def status_update(self, state: Literal["ON"] | Literal["OFF"]) -> None:
         await self.status_update_queue.put(state)
 
 

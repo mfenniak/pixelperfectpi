@@ -13,6 +13,7 @@ import asyncio
 import pytz
 import types
 import mqtt
+from typing import Literal
 
 config: object | types.ModuleType = object()
 try:
@@ -55,7 +56,7 @@ class SampleBase(object):
 
         mqtt.config_arg_parser(self.parser)
 
-        self.state = "ON"
+        self.state: Literal["ON"] | Literal["OFF"] = "ON"
         self.turn_on_event = None
         self.shutdown_event = asyncio.Event()
 
@@ -69,14 +70,14 @@ class SampleBase(object):
     async def run(self):
         raise NotImplemented()
 
-    async def turn_on(self):
+    async def turn_on(self) -> None:
         if self.state == "ON":
             return
         self.state = "ON"
         self.turn_on_event.set()
         await self.mqtt.status_update(self.state)
 
-    async def turn_off(self):
+    async def turn_off(self) -> None:
         if self.state == "OFF":
             return
         self.turn_on_event = asyncio.Event()

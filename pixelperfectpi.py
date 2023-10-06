@@ -19,6 +19,7 @@ import pytz
 import random
 import recurring_ical_events # type: ignore
 import os.path
+from typing import Set
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -543,7 +544,7 @@ class Clock(SampleBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def pre_run(self):
+    def pre_run(self) -> None:
         self.purpleair = PurpleAirDataResolver()
         self.env_canada = EnvironmentCanadaDataResolver()
         self.calendar = CalendarDataResolver(self.ical_url, self.display_tz)
@@ -552,7 +553,7 @@ class Clock(SampleBase):
             self.env_canada,
             self.calendar,
         ]
-        self.background_tasks = set()
+        self.background_tasks: Set[asyncio.Task] = set()
 
         addt_config={
             "font_path": self.font_path,
@@ -580,18 +581,18 @@ class Clock(SampleBase):
             **addt_config,
         )
 
-    async def create_canvas(self, matrix):
+    async def create_canvas(self, matrix) -> None:
         self.offscreen_canvas = matrix.CreateFrameCanvas()
         self.buffer = Image.new("RGB", (self.offscreen_canvas.width, self.offscreen_canvas.height))
 
-    async def update_data(self):
+    async def update_data(self) -> None:
         now = time.time()
         for data_resolver in self.data_resolvers:
             task = asyncio.create_task(data_resolver.maybe_refresh(now))
             self.background_tasks.add(task)
             task.add_done_callback(self.background_tasks.discard)
 
-    async def draw_frame(self, matrix):
+    async def draw_frame(self, matrix) -> None:
         now = time.time()
         self.time_component.draw(self.buffer, now=now)
         self.curr_component.draw(self.buffer, now=now)
