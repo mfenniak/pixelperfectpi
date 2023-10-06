@@ -6,7 +6,10 @@ from dataclasses import dataclass
 import backoff
 import socket
 import os
-import config
+try:
+    import config
+except ModuleNotFoundError:
+    config = object()
 import logging
 
 logging.getLogger('backoff').addHandler(logging.StreamHandler())
