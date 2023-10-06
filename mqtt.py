@@ -1,16 +1,19 @@
 import json
 import traceback
 import asyncio
-from asyncio_mqtt import Client
+from aiomqtt import Client
 from dataclasses import dataclass
 import backoff
 import socket
 import os
+import types
+import logging
+
+config: object | types.ModuleType = object()
 try:
     import config
 except ModuleNotFoundError:
     config = object()
-import logging
 
 logging.getLogger('backoff').addHandler(logging.StreamHandler())
 

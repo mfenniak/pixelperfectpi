@@ -11,16 +11,19 @@ import sys
 import os
 import asyncio
 import pytz
+import types
+import mqtt
+
+config: object | types.ModuleType = object()
 try:
     import config
 except ModuleNotFoundError:
     config = object()
-import mqtt
 
 if EMULATED:
-    from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
+    from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions # type: ignore
 else:
-    from rgbmatrix import RGBMatrix, RGBMatrixOptions
+    from rgbmatrix import RGBMatrix, RGBMatrixOptions # type: ignore
 
 
 class SampleBase(object):

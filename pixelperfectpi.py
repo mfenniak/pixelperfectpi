@@ -3,22 +3,21 @@
 from samplebase import SampleBase, EMULATED
 
 if EMULATED:
-    from RGBMatrixEmulator import graphics
+    from RGBMatrixEmulator import graphics # type: ignore
 else:
-    from rgbmatrix import graphics
-from rgbmatrix import font_path
-from lxml import etree
+    from rgbmatrix import graphics # type: ignore
+from lxml import etree # type: ignore
 from PIL import Image, ImageFont, ImageDraw, ImageColor
 import time
 import asyncio
 import aiohttp
 import traceback
 import re
-import icalendar
+import icalendar # type: ignore
 import datetime
 import pytz
 import random
-import recurring_ical_events
+import recurring_ical_events # type: ignore
 import os.path
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
@@ -605,5 +604,4 @@ class Clock(SampleBase):
 # Main function
 if __name__ == "__main__":
     run_text = Clock()
-    if (not run_text.process()):
-        run_text.print_help()
+    run_text.process()
