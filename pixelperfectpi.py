@@ -19,20 +19,28 @@ import pytz
 import random
 import recurring_ical_events # type: ignore
 import os.path
-from typing import Set
+from typing import Set, TypeVar, Generic, Any
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
+T = TypeVar('T')
 
-class DataResolver(object):
-    def __init__(self, refresh_interval):
+class DataResolver(Generic[T]):
+    def __init__(self) -> None:
+        self.data: None | T = None
+
+    async def maybe_refresh(self, now: float) -> None:
+        return
+
+class ScheduledDataResolver(DataResolver[T]):
+    def __init__(self, refresh_interval: float) -> None:
         jitter_frac = 1 + (random.random() * 0.2) # always jitter longer so we don't drop below refresh_interval
         self.refresh_interval = (refresh_interval * jitter_frac)
-        self.last_refresh = 0
+        self.last_refresh: float = 0
         self.lock = asyncio.Lock()
-        self.data = None
+        self.data: None | T = None
 
-    async def maybe_refresh(self, now):
+    async def maybe_refresh(self, now: float) -> None:
         delta = now - self.last_refresh
         if delta > self.refresh_interval:
             try:
@@ -45,7 +53,10 @@ class DataResolver(object):
             except TimeoutError:
                 pass
 
-    async def refresh(self):
+    async def do_collection(self) -> None | T:
+        raise NotImplemented
+
+    async def refresh(self) -> None:
         try:
             cr = self.do_collection()
             self.data = await cr
@@ -56,28 +67,26 @@ class DataResolver(object):
             self.data = None
 
 
-class StaticDataResolver(object):
-    def __init__(self, static_data=None):
+class StaticDataResolver(DataResolver[T]):
+    def __init__(self, static_data: T):
         super().__init__()
         self.data = static_data
 
-    async def maybe_refresh(self, now):
-        return
 
-
-class PurpleAirDataResolver(DataResolver):
-    def __init__(self):
+class PurpleAirDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: change to a dataclass
+    def __init__(self) -> None:
         super().__init__(refresh_interval=60)
 
-    async def do_collection(self):
+    async def do_collection(self) -> dict[str, Any]:
         async with aiohttp.ClientSession() as session:
             async with session.get('http://10.156.95.135/json') as response:
                 if response.status != 200:
                     raise Exception(f"Unexpected status code: {response.status}")
-                purpleair = await response.json()
+                purpleair: dict[str, Any] = await response.json()
 
                 color = purpleair["p25aqic"] # string, eg. rgb(87,237,0)
                 m = RGB_RE.match(color)
+                assert m is not None
                 red, green, blue = int(m.group("red")), int(m.group("green")), int(m.group("blue")) 
                 purpleair["p25aqic"] = (red, green, blue)
 
@@ -99,18 +108,18 @@ class PurpleAirDataResolver(DataResolver):
                 return purpleair
 
 
-class EnvironmentCanadaDataResolver(DataResolver):
-    def __init__(self):
+class EnvironmentCanadaDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: change to a dataclass
+    def __init__(self) -> None:
         super().__init__(refresh_interval=3600)
 
-    async def fetch_xml(self):
+    async def fetch_xml(self) -> bytes:
         async with aiohttp.ClientSession() as session:
             async with session.get('https://dd.weather.gc.ca/citypage_weather/xml/AB/s0000047_e.xml') as response:
                 if response.status != 200:
                     raise Exception(f"Unexpected status code: {response.status}")
                 return await response.read()
 
-    async def do_collection(self):
+    async def do_collection(self) -> dict[str, Any]:
         xml_content = await self.fetch_xml()
         root = etree.fromstring(xml_content)
         elements = root.xpath("/siteData/forecastGroup/forecast")
@@ -143,20 +152,20 @@ class EnvironmentCanadaDataResolver(DataResolver):
         return data
 
 
-class CalendarDataResolver(DataResolver):
-    def __init__(self, ical_url, display_tz):
+class CalendarDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: change to a dataclass
+    def __init__(self, ical_url: str, display_tz: pytz.BaseTzInfo) -> None:
         super().__init__(refresh_interval=3600)
         self.ical_url = ical_url
         self.display_tz = display_tz
 
-    async def fetch_ical(self):
+    async def fetch_ical(self) -> bytes:
         async with aiohttp.ClientSession() as session:
             async with session.get(self.ical_url) as response:
                 if response.status != 200:
                     raise Exception(f"Unexpected status code: {response.status}")
                 return await response.read()
 
-    async def do_collection(self):
+    async def do_collection(self) -> dict[str, Any]:
         ical_content = await self.fetch_ical()
         calendar = icalendar.Calendar.from_ical(ical_content)
         future_events = []
