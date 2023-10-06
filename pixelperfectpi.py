@@ -19,7 +19,7 @@ import pytz
 import random
 import recurring_ical_events # type: ignore
 import os.path
-from typing import Set, TypeVar, Generic, Any
+from typing import Set, TypeVar, Generic, Any, Literal, Callable
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -199,8 +199,8 @@ class CalendarDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: chan
         }
 
 
-class DrawPanel(object):
-    def __init__(self, x, y, w, h, font_path, data_resolver, **kwargs):
+class DrawPanel(Generic[T]):
+    def __init__(self, x: int, y: int, w: int, h: int, font_path: str, data_resolver: DataResolver[T]) -> None:
         self.x = x
         self.y = y
         self.w = w
@@ -208,25 +208,33 @@ class DrawPanel(object):
         self.font_path = font_path
         self.buffer = Image.new("RGB", (self.w, self.h))
         self.imagedraw = ImageDraw.Draw(self.buffer)
-        self.pil_font = None
+        self.pil_font: None | ImageFont.ImageFont = None
         self.data_resolver = data_resolver
 
-    def load_font(self, name):
+    def load_font(self, name: str) -> None:
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
-    def frame_count(self, **kwargs):
+    def frame_count(self, **kwargs: Any) -> int:
         return 1
 
-    def draw(self, parent_buffer, **kwargs):
+    def do_draw(self, **kwargs: Any) -> None:
+        raise NotImplemented
+
+    def draw(self, parent_buffer: Image.Image, **kwargs: Any) -> None:
         self.do_draw(**kwargs)
         parent_buffer.paste(self.buffer, box=(self.x, self.y))
 
-    def fill(self, color):
+    def fill(self, color: tuple[int, int, int]) -> None:
         self.buffer.paste(color, box=(0,0,self.w,self.h))
 
     # halign - left, center, right
     # valign - top, middle, bottom
-    def draw_text(self, color, text, halign="center", valign="middle"):
+    def draw_text(self,
+        color: tuple[int, int, int], text: str,
+        halign: Literal["center"] | Literal["left"] | Literal["right"]="center",
+        valign: Literal["top"] | Literal["middle"] | Literal["bottom"]="middle"
+        ) -> None:
+
         if self.pil_font is None:
             raise Exception("must call load_font first")
 
