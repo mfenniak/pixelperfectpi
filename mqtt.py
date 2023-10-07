@@ -1,7 +1,6 @@
 from aiomqtt import Client
 from dataclasses import dataclass
-from samplebase import SampleBase
-from typing import Any, Literal
+from typing import Any, Literal, TYPE_CHECKING
 import argparse
 import asyncio
 import backoff
@@ -12,6 +11,9 @@ import os
 import socket
 import traceback
 import types
+
+if TYPE_CHECKING:
+    from samplebase import SampleBase
 
 config_obj: object | types.ModuleType = object()
 try:
@@ -64,7 +66,7 @@ def on_runtime_error(e: Exception) -> bool:
     return isinstance(e, RuntimeError)
 
 class MqttServer(object):
-    def __init__(self, config: MqttConfig, clock: SampleBase, shutdown_event: asyncio.Event):
+    def __init__(self, config: MqttConfig, clock: "SampleBase", shutdown_event: asyncio.Event):
         self.config = config
         self.clock = clock
         self.shutdown_event = shutdown_event

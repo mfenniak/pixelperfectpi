@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from samplebase import SampleBase, EMULATED
+from samplebase import EMULATED, SampleBase
 
 if EMULATED:
     from RGBMatrixEmulator import RGBMatrix, graphics # type: ignore
@@ -326,14 +326,14 @@ class DrawPanel(Generic[T]):
 
 class MultiPanelPanel(DrawPanel[None]):
     # FIXME: correct types for panel_constructors
-    def __init__(self, panel_constructors: Any, x: int, y: int, w: int, h: int, font_path: str, time_per_frame: int = 5) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, panel_constructors: Any, x: int, y: int, w: int, h: int, font_path: str, time_per_frame: int = 5, **kwargs: Any) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=w, h=h, font_path=font_path)
         # inner_kwargs = kwargs.copy()
         # # same width & height, but don't inherit the x/y position
         # inner_kwargs['x'] = 0
         # inner_kwargs['y'] = 0
         self.panels = [
-            constructor(x=0, y=0, w=w, h=h, font_path=font_path) for constructor in panel_constructors
+            constructor(x=0, y=0, w=w, h=h, font_path=font_path, **kwargs) for constructor in panel_constructors
         ]
         self.time_per_frame = time_per_frame
 
@@ -370,8 +370,8 @@ class MultiPanelPanel(DrawPanel[None]):
 
 
 class TimeComponent(DrawPanel[None]):
-    def __init__(self, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=w, h=h, font_path=font_path)
         self.load_font("7x13")
 
     def do_draw(self, now: float, data: None, frame: int) -> None:
@@ -387,8 +387,8 @@ class TimeComponent(DrawPanel[None]):
 
 
 class DayOfWeekComponent(DrawPanel[None]):
-    def __init__(self, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=w, h=h, font_path=font_path)
         self.load_font("7x13")
 
     def do_draw(self, now: float, data: None, frame: int) -> None:
@@ -403,8 +403,8 @@ class DayOfWeekComponent(DrawPanel[None]):
 
 
 class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=purpleair, x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=purpleair, x=x, y=y, w=w, h=h, font_path=font_path)
         self.load_font("7x13")
 
     def frame_count(self, data: dict[str, Any] | None) -> int:
@@ -422,8 +422,8 @@ class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
 
 
 class AqiComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=purpleair, x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=purpleair, x=x, y=y, w=w, h=h, font_path=font_path)
         self.load_font("7x13")
 
     def frame_count(self, data: dict[str, Any] | None) -> int:
@@ -443,8 +443,8 @@ class AqiComponent(DrawPanel[dict[str, Any]]):
 
 
 class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, env_canada: EnvironmentCanadaDataResolver, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=env_canada, x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, env_canada: EnvironmentCanadaDataResolver, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=env_canada, x=x, y=y, w=w, h=h, font_path=font_path)
         self.load_font("4x6")
 
     def frame_count(self, data: dict[str, Any] | None) -> int:
@@ -465,8 +465,8 @@ class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
 
 
 class SunForecastComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, env_canada: EnvironmentCanadaDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=env_canada, x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, env_canada: EnvironmentCanadaDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=env_canada, x=x, y=y, w=w, h=h, font_path=font_path)
         self.display_tz = display_tz
         self.load_font("5x8")
 
@@ -498,8 +498,8 @@ class SunForecastComponent(DrawPanel[dict[str, Any]]):
 
 
 class CalendarComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str) -> None:
-        super().__init__(data_resolver=calendar, x=x, y=y, w=h, h=h, font_path=font_path)
+    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=calendar, x=x, y=y, w=w, h=h, font_path=font_path)
         self.display_tz = display_tz
         self.load_font("4x6")
 
