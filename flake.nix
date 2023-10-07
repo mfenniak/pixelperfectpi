@@ -22,12 +22,15 @@
           [
             (mfenniak.packages.${system}.python-librgbmatrix pythonInterpreter)
             ps.aiohttp
-            ps.lxml
+            ps.aiomqtt
+            ps.backoff
             ps.icalendar
+            ps.lxml
+            ps.mypy
             ps.pytz
             ps.recurring-ical-events
-            ps.asyncio-mqtt
-            ps.backoff
+            ps.types-pillow
+            ps.types-pytz
           ] ++ ps.lib.optional (system == "x86_64-linux") (mfenniak.packages.${system}.python-rgbmatrixemulator pythonInterpreter)
         ));
       in rec {

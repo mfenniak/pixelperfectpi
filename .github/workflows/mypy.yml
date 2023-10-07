@@ -1,0 +1,13 @@
+name: check
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+      - run: nix develop .# --command mypy --strict *.py

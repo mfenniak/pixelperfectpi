@@ -6,25 +6,31 @@ else:
     print("Emulating RGB matrix...")
 
 import argparse
-import time
-import sys
-import os
 import asyncio
-import pytz
-try:
-    import config
-except ModuleNotFoundError:
-    config = object()
+import importlib
 import mqtt
+import os
+import pytz
+import sys
+import time
+import types
+from typing import Literal
+
+config_obj: object | types.ModuleType = object()
+try:
+    # use import_module to avoid mypy from finding this file only when running local dev
+    config_obj = importlib.import_module("config")
+except ModuleNotFoundError:
+    pass
 
 if EMULATED:
-    from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
+    from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions # type: ignore
 else:
-    from rgbmatrix import RGBMatrix, RGBMatrixOptions
+    from rgbmatrix import RGBMatrix, RGBMatrixOptions # type: ignore
 
 
 class SampleBase(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self) -> None:
         self.parser = argparse.ArgumentParser()
 
         self.parser.add_argument("-r", "--led-rows", action="store", help="Display rows. 16 for 16x32, 32 for 32x32. Default: 32", default=32, type=int)
@@ -52,43 +58,42 @@ class SampleBase(object):
 
         mqtt.config_arg_parser(self.parser)
 
-        self.state = "ON"
-        self.turn_on_event = None
+        self.state: Literal["ON"] | Literal["OFF"] = "ON"
+        self.turn_on_event: asyncio.Event | None = None
         self.shutdown_event = asyncio.Event()
 
-    ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
-    font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
-    display_tz = property(lambda self: pytz.timezone(getattr(config, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
+    ical_url = property(lambda self: getattr(config_obj, 'ICAL_URL', self.args.ical_url))
+    font_path = property(lambda self: getattr(config_obj, 'FONT_PATH', self.args.font_path) or "./fonts")
+    display_tz = property(lambda self: pytz.timezone(getattr(config_obj, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
 
-    def usleep(self, value):
-        time.sleep(value / 1000000.0)
+    async def run(self) -> None:
+        raise NotImplemented
 
-    async def run(self):
-        raise NotImplemented()
-
-    async def turn_on(self):
+    async def turn_on(self) -> None:
         if self.state == "ON":
             return
+        assert self.turn_on_event is not None
         self.state = "ON"
         self.turn_on_event.set()
         await self.mqtt.status_update(self.state)
 
-    async def turn_off(self):
+    async def turn_off(self) -> None:
         if self.state == "OFF":
             return
+        assert self.turn_on_event is None
         self.turn_on_event = asyncio.Event()
         self.state = "OFF"
         await self.mqtt.status_update(self.state)
 
-    def process(self):
+    def process(self) -> None:
         self.args = self.parser.parse_args()
 
         options = RGBMatrixOptions()
 
         if self.args.led_gpio_mapping != None:
             options.hardware_mapping = self.args.led_gpio_mapping
-        options.rows = getattr(config, 'LED_ROWS', self.args.led_rows)
-        options.cols = getattr(config, 'LED_COLS', self.args.led_cols)
+        options.rows = getattr(config_obj, 'LED_ROWS', self.args.led_rows)
+        options.cols = getattr(config_obj, 'LED_COLS', self.args.led_cols)
         options.chain_length = self.args.led_chain
         options.parallel = self.args.led_parallel
         options.row_address_type = self.args.led_row_addr_type
@@ -103,7 +108,7 @@ class SampleBase(object):
         if self.args.led_show_refresh:
             options.show_refresh_rate = 1
 
-        led_slowdown_gpio = getattr(config, 'LED_SLOWDOWN_GPIO', self.args.led_slowdown_gpio)
+        led_slowdown_gpio = getattr(config_obj, 'LED_SLOWDOWN_GPIO', self.args.led_slowdown_gpio)
         if led_slowdown_gpio != None:
             options.gpio_slowdown = led_slowdown_gpio
         if self.args.led_no_hardware_pulse:
@@ -125,12 +130,24 @@ class SampleBase(object):
             print("Exiting\n")
             sys.exit(0)
 
-    async def async_run(self):
+    def pre_run(self) -> None:
+        raise NotImplemented
+
+    async def update_data(self) -> None:
+        raise NotImplemented
+
+    async def create_canvas(self, matrix: RGBMatrix) -> None:
+        raise NotImplemented
+
+    async def draw_frame(self, matrix: RGBMatrix) -> None:
+        raise NotImplemented
+
+    async def async_run(self) -> None:
         self.mqtt.start()
         self.pre_run()
         await self.main_loop()
 
-    async def main_loop(self):
+    async def main_loop(self) -> None:
         while True:
             await self.update_data()
 
@@ -141,6 +158,7 @@ class SampleBase(object):
                     self.matrix = None
 
                 # Wake when we're turned on...
+                assert self.turn_on_event is not None
                 turn_on_event_task = asyncio.create_task(self.turn_on_event.wait())
                 # Wake after a bit just to do an update_data call...
                 sleep_task = asyncio.create_task(asyncio.sleep(120))
