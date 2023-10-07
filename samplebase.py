@@ -15,11 +15,12 @@ import types
 import mqtt
 from typing import Literal
 
-config: object | types.ModuleType = object()
+config_obj: object | types.ModuleType = object()
 try:
-    import config # type: ignore
+    import config
+    config_obj = config
 except ModuleNotFoundError:
-    config = object()
+    pass
 
 if EMULATED:
     from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions # type: ignore
@@ -60,9 +61,9 @@ class SampleBase(object):
         self.turn_on_event: asyncio.Event | None = None
         self.shutdown_event = asyncio.Event()
 
-    ical_url = property(lambda self: getattr(config, 'ICAL_URL', self.args.ical_url))
-    font_path = property(lambda self: getattr(config, 'FONT_PATH', self.args.font_path) or "./fonts")
-    display_tz = property(lambda self: pytz.timezone(getattr(config, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
+    ical_url = property(lambda self: getattr(config_obj, 'ICAL_URL', self.args.ical_url))
+    font_path = property(lambda self: getattr(config_obj, 'FONT_PATH', self.args.font_path) or "./fonts")
+    display_tz = property(lambda self: pytz.timezone(getattr(config_obj, 'DISPLAY_TZ', self.args.display_tz) or "America/Edmonton"))
 
     async def run(self) -> None:
         raise NotImplemented
@@ -90,8 +91,8 @@ class SampleBase(object):
 
         if self.args.led_gpio_mapping != None:
             options.hardware_mapping = self.args.led_gpio_mapping
-        options.rows = getattr(config, 'LED_ROWS', self.args.led_rows)
-        options.cols = getattr(config, 'LED_COLS', self.args.led_cols)
+        options.rows = getattr(config_obj, 'LED_ROWS', self.args.led_rows)
+        options.cols = getattr(config_obj, 'LED_COLS', self.args.led_cols)
         options.chain_length = self.args.led_chain
         options.parallel = self.args.led_parallel
         options.row_address_type = self.args.led_row_addr_type
@@ -106,7 +107,7 @@ class SampleBase(object):
         if self.args.led_show_refresh:
             options.show_refresh_rate = 1
 
-        led_slowdown_gpio = getattr(config, 'LED_SLOWDOWN_GPIO', self.args.led_slowdown_gpio)
+        led_slowdown_gpio = getattr(config_obj, 'LED_SLOWDOWN_GPIO', self.args.led_slowdown_gpio)
         if led_slowdown_gpio != None:
             options.gpio_slowdown = led_slowdown_gpio
         if self.args.led_no_hardware_pulse:

@@ -3,9 +3,9 @@
 from samplebase import SampleBase, EMULATED
 
 if EMULATED:
-    from RGBMatrixEmulator import graphics # type: ignore
+    from RGBMatrixEmulator import RGBMatrix, graphics # type: ignore
 else:
-    from rgbmatrix import graphics # type: ignore
+    from rgbmatrix import RGBMatrix, graphics # type: ignore
 from lxml import etree # type: ignore
 from PIL import Image, ImageFont, ImageDraw, ImageColor
 import time
@@ -214,14 +214,14 @@ class DrawPanel(Generic[T]):
     def load_font(self, name: str) -> None:
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
-    def frame_count(self, **kwargs: Any) -> int:
+    def frame_count(self, data: T | None) -> int:
         return 1
 
-    def do_draw(self, **kwargs: Any) -> None:
+    def do_draw(self, now: float, data: T | None, frame: int) -> None:
         raise NotImplemented
 
-    def draw(self, parent_buffer: Image.Image, **kwargs: Any) -> None:
-        self.do_draw(**kwargs)
+    def draw(self, parent_buffer: Image.Image, now: float, data: T | None, frame: int) -> None:
+        self.do_draw(now, data, frame)
         parent_buffer.paste(self.buffer, box=(self.x, self.y))
 
     def fill(self, color: tuple[int, int, int]) -> None:
@@ -230,7 +230,8 @@ class DrawPanel(Generic[T]):
     # halign - left, center, right
     # valign - top, middle, bottom
     def draw_text(self,
-        color: tuple[int, int, int], text: str,
+        color: tuple[int, int, int] | tuple[int, int, int, int], # RGB / RGBA
+        text: str,
         halign: Literal["center"] | Literal["left"] | Literal["right"]="center",
         valign: Literal["top"] | Literal["middle"] | Literal["bottom"]="middle"
         ) -> None:
@@ -323,24 +324,25 @@ class DrawPanel(Generic[T]):
         self.imagedraw.multiline_text((text_x, text_y), new_text, fill=color, font=self.pil_font, spacing=0, align=halign)
 
 
-class MultiPanelPanel(DrawPanel):
-    def __init__(self, panel_constructors, time_per_frame=5, *args, **kwargs):
-        super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
-        inner_kwargs = kwargs.copy()
-        # same width & height, but don't inherit the x/y position
-        inner_kwargs['x'] = 0
-        inner_kwargs['y'] = 0
+class MultiPanelPanel(DrawPanel[None]):
+    # FIXME: correct types for panel_constructors
+    def __init__(self, panel_constructors: Any, x: int, y: int, w: int, h: int, font_path: str, time_per_frame: int = 5) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=h, h=h, font_path=font_path)
+        # inner_kwargs = kwargs.copy()
+        # # same width & height, but don't inherit the x/y position
+        # inner_kwargs['x'] = 0
+        # inner_kwargs['y'] = 0
         self.panels = [
-            constructor(**inner_kwargs) for constructor in panel_constructors
+            constructor(x=0, y=0, w=w, h=h, font_path=font_path) for constructor in panel_constructors
         ]
         self.time_per_frame = time_per_frame
 
-    def do_draw(self, now, **kwargs):
+    def do_draw(self, now: float, data: None, frame: int) -> None:
         # First; get a snapshot of the data for each panel so that it doesn't change while we're calculating this.
         panel_datas = [x.data_resolver.data for x in self.panels]
 
         # Ask each panel how many frames they will have, considering their data.
-        frame_count = [x.frame_count(data=panel_datas[i]) for i, x in enumerate(self.panels)]
+        frame_count: list[int] = [x.frame_count(data=panel_datas[i]) for i, x in enumerate(self.panels)]
 
         # Based upon the total number of frames on all panels, and the time, calculate the active frame.
         total_frames = sum(frame_count)
@@ -355,28 +357,28 @@ class MultiPanelPanel(DrawPanel):
         running_total = 0
         target_panel_index = None
         target_frame_index = None
-        for panel_index, frame_count in enumerate(frame_count):
+        for panel_index, _frame_count in enumerate(frame_count):
             maybe_frame_index = active_frame - running_total
-            if maybe_frame_index < frame_count:
+            if maybe_frame_index < _frame_count:
                 target_panel_index = panel_index
                 target_frame_index = maybe_frame_index
                 break
-            running_total += frame_count
+            running_total += _frame_count
+        assert target_panel_index is not None
 
         self.panels[target_panel_index].draw(self.buffer, now=now, data=panel_datas[target_panel_index], frame=target_frame_index)
 
 
-class TimeComponent(DrawPanel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
+class TimeComponent(DrawPanel[None]):
+    def __init__(self, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=h, h=h, font_path=font_path)
         self.load_font("7x13")
 
-    def do_draw(self, now, **kwargs):
+    def do_draw(self, now: float, data: None, frame: int) -> None:
         self.fill((0, 0, 0))
 
         hue = int(now*50 % 360)
-        red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-        color = (red, green, blue)
+        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
 
         timestr = time.strftime("%-I:%M")
         if int(now % 2) == 0:
@@ -384,34 +386,34 @@ class TimeComponent(DrawPanel):
         self.draw_text(color, timestr, halign="right")
 
 
-class DayOfWeekComponent(DrawPanel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(data_resolver=StaticDataResolver(), *args, **kwargs)
+class DayOfWeekComponent(DrawPanel[None]):
+    def __init__(self, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=h, h=h, font_path=font_path)
         self.load_font("7x13")
 
-    def do_draw(self, now, **kwargs):
+    def do_draw(self, now: float, data: None, frame: int) -> None:
         self.fill((0, 0, 0))
 
+        # FIXME: color is synced to the time, but, only by copy-and-paste
         hue = int(now*50 % 360)
-        red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-        color = (red, green, blue)
+        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
 
         timestr = time.strftime("%a")
         self.draw_text(color, timestr)
 
 
-class CurrentTemperatureComponent(DrawPanel):
-    def __init__(self, purpleair, *args, **kwargs):
-        super().__init__(data_resolver=purpleair, *args, **kwargs)
+class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
+    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=purpleair, x=x, y=y, w=h, h=h, font_path=font_path)
         self.load_font("7x13")
 
-    def frame_count(self, data):
-        if data == None:
+    def frame_count(self, data: dict[str, Any] | None) -> int:
+        if data is None:
             return 0
         else:
             return 1
 
-    def do_draw(self, data, **kwargs):
+    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
         self.fill((0, 0, 0))
         if data is None:
             return
@@ -419,38 +421,42 @@ class CurrentTemperatureComponent(DrawPanel):
         self.draw_text((128,128,128), f"{curr_c:.0f}°")
 
 
-class AqiComponent(DrawPanel):
-    def __init__(self, purpleair, *args, **kwargs):
-        super().__init__(data_resolver=purpleair, *args, **kwargs)
+class AqiComponent(DrawPanel[dict[str, Any]]):
+    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=purpleair, x=x, y=y, w=h, h=h, font_path=font_path)
         self.load_font("7x13")
 
-    def frame_count(self, data):
+    def frame_count(self, data: dict[str, Any] | None) -> int:
         if data == None:
             return 0
         else:
             return 1
 
-    def do_draw(self, data, **kwargs):
+    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
         self.fill((0, 16, 0))
+        if data is None:
+            return
         (red, green, blue) = data["p25aqic"]
         textColor = (red, green, blue)
         aqi = data['p25aqiavg']
         self.draw_text(textColor, f"AQI {aqi:.0f}")
 
 
-class WeatherForecastComponent(DrawPanel):
-    def __init__(self, env_canada, *args, **kwargs):
-        super().__init__(data_resolver=env_canada, *args, **kwargs)
+class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
+    def __init__(self, env_canada: EnvironmentCanadaDataResolver, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=env_canada, x=x, y=y, w=h, h=h, font_path=font_path)
         self.load_font("4x6")
 
-    def frame_count(self, data):
+    def frame_count(self, data: dict[str, Any] | None) -> int:
         if data == None:
             return 0
         else:
             return 1
 
-    def do_draw(self, data, **kwargs):
+    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
         self.fill((16, 0, 0))
+        if data is None:
+            return
         n = data['forecast']['name']
         s = data['forecast']['text_summary']
         t = data['forecast']['type'].capitalize()
@@ -458,24 +464,27 @@ class WeatherForecastComponent(DrawPanel):
         self.draw_text((255, 255, 255), f"{n} {s} {t} {deg_c:.0f}°")
 
 
-class SunForecastComponent(DrawPanel):
-    def __init__(self, env_canada, display_tz, *args, **kwargs):
-        super().__init__(data_resolver=env_canada, *args, **kwargs)
+class SunForecastComponent(DrawPanel[dict[str, Any]]):
+    def __init__(self, env_canada: EnvironmentCanadaDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=env_canada, x=x, y=y, w=h, h=h, font_path=font_path)
         self.display_tz = display_tz
         self.load_font("5x8")
 
-    def frame_count(self, data):
+    def frame_count(self, data: dict[str, Any] | None) -> int:
         if data == None:
             return 0
         else:
             return 1
 
-    def do_draw(self, now, data, **kwargs):
-        now = datetime.datetime.now(self.display_tz)
+    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
+        if data is None:
+            return
+
+        now_dt = datetime.datetime.now(self.display_tz)
         sunrise = data['sunrise']
         sunset = data['sunset']
 
-        if sunrise > now and sunrise < sunset:
+        if sunrise > now_dt and sunrise < sunset:
             self.fill((16, 16, 0))
             sun = "Sunrise"
             color = (255,167,0)
@@ -488,47 +497,49 @@ class SunForecastComponent(DrawPanel):
         self.draw_text(color, f"{sun} at {dt}")
 
 
-class CalendarComponent(DrawPanel):
-    def __init__(self, calendar, display_tz, *args, **kwargs):
-        super().__init__(data_resolver=calendar, *args, **kwargs)
+class CalendarComponent(DrawPanel[dict[str, Any]]):
+    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str) -> None:
+        super().__init__(data_resolver=calendar, x=x, y=y, w=h, h=h, font_path=font_path)
         self.display_tz = display_tz
         self.load_font("4x6")
 
-    def frame_count(self, data):
-        if data == None:
+    def frame_count(self, data: dict[str, Any] | None) -> int:
+        if data is None:
             return 0
         return min(len(data["future_events"]), 3) # no more than this many events
 
-    def do_draw(self, now, data, frame, **kwargs):
+    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
         self.fill((0, 0, 16))
+
+        if data is None:
+            return
 
         # FIXME: color is synced to the time, but, only by copy-and-paste
         hue = int(now*50 % 360)
-        red, green, blue = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-        textColor = (red, green, blue)
+        textColor = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
 
         (dt, summary) = data["future_events"][frame]
 
         preamble = ""
-        now = datetime.datetime.now(self.display_tz)
+        now_dt = datetime.datetime.now(self.display_tz)
 
         if dt.time() == datetime.time(0,0,0):
             # full day event probably
-            if dt.date() == now.date():
+            if dt.date() == now_dt.date():
                 preamble = "tdy"
-            elif dt.date() == (now + datetime.timedelta(days=1)).date():
+            elif dt.date() == (now_dt + datetime.timedelta(days=1)).date():
                 preamble = dt.strftime("tmw")
-            elif (dt - now) < datetime.timedelta(days=7):
+            elif (dt - now_dt) < datetime.timedelta(days=7):
                 preamble = dt.strftime("%a")
             else:
                 preamble = dt.strftime("%a %-d")
         else:
             # timed event
-            if dt.date() == now.date():
+            if dt.date() == now_dt.date():
                 preamble = dt.strftime("%-I:%M%p").replace(":00", "")
-            elif dt.date() == (now + datetime.timedelta(days=1)).date():
+            elif dt.date() == (now_dt + datetime.timedelta(days=1)).date():
                 preamble = dt.strftime("tmw %-I%p")
-            elif (dt - now) < datetime.timedelta(days=7):
+            elif (dt - now_dt) < datetime.timedelta(days=7):
                 preamble = dt.strftime("%a %-I%p")
             else:
                 preamble = dt.strftime("%a %-d")
@@ -558,8 +569,8 @@ class CalendarComponent(DrawPanel):
 
 
 class Clock(SampleBase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self) -> None:
+        super().__init__()
 
     def pre_run(self) -> None:
         self.purpleair = PurpleAirDataResolver()
@@ -570,7 +581,7 @@ class Clock(SampleBase):
             self.env_canada,
             self.calendar,
         ]
-        self.background_tasks: Set[asyncio.Task] = set()
+        self.background_tasks: Set[asyncio.Task[Any]] = set()
 
         addt_config={
             "font_path": self.font_path,
@@ -598,7 +609,7 @@ class Clock(SampleBase):
             **addt_config,
         )
 
-    async def create_canvas(self, matrix) -> None:
+    async def create_canvas(self, matrix: RGBMatrix) -> None:
         self.offscreen_canvas = matrix.CreateFrameCanvas()
         self.buffer = Image.new("RGB", (self.offscreen_canvas.width, self.offscreen_canvas.height))
 
@@ -609,11 +620,11 @@ class Clock(SampleBase):
             self.background_tasks.add(task)
             task.add_done_callback(self.background_tasks.discard)
 
-    async def draw_frame(self, matrix) -> None:
+    async def draw_frame(self, matrix: RGBMatrix) -> None:
         now = time.time()
-        self.time_component.draw(self.buffer, now=now)
-        self.curr_component.draw(self.buffer, now=now)
-        self.lower_panels.draw(self.buffer, now=now)
+        self.time_component.draw(self.buffer, now=now, frame=0, data=None) # FIXME: find a way to remove frame/data params
+        self.curr_component.draw(self.buffer, now=now, frame=0, data=None)
+        self.lower_panels.draw(self.buffer, now=now, frame=0, data=None)
         self.offscreen_canvas.SetImage(self.buffer, 0, 0)
 
         self.offscreen_canvas = matrix.SwapOnVSync(self.offscreen_canvas)

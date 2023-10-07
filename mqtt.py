@@ -12,11 +12,14 @@ import types
 import logging
 import argparse
 
-config: object | types.ModuleType = object()
+config_obj: object | types.ModuleType = object()
 try:
-    import config # type: ignore
+    import config
+    config_obj = config
 except ModuleNotFoundError:
-    config = object()
+    pass
+
+
 
 logging.getLogger('backoff').addHandler(logging.StreamHandler())
 
@@ -152,34 +155,34 @@ class MqttServer(object):
 def config_arg_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mqtt-host",
         help="MQTT hostname",
-        default=os.environ.get("MQTT_HOST", getattr(config, "MQTT_HOST", None)),
+        default=os.environ.get("MQTT_HOST", getattr(config_obj, "MQTT_HOST", None)),
         type=str)
     parser.add_argument("--mqtt-port",
         help="MQTT port",
-        default=os.environ.get("MQTT_PORT", getattr(config, "MQTT_PORT", 1883)),
+        default=os.environ.get("MQTT_PORT", getattr(config_obj, "MQTT_PORT", 1883)),
         type=int)
     parser.add_argument("--mqtt-username",
         help="MQTT username",
-        default=os.environ.get("MQTT_USERNAME", getattr(config, "MQTT_USERNAME", None)),
+        default=os.environ.get("MQTT_USERNAME", getattr(config_obj, "MQTT_USERNAME", None)),
         type=str)
     parser.add_argument("--mqtt-password",
         help="MQTT password",
-        default=os.environ.get("MQTT_PASSWORD", getattr(config, "MQTT_PASSWORD", None)),
+        default=os.environ.get("MQTT_PASSWORD", getattr(config_obj, "MQTT_PASSWORD", None)),
         type=str)
     parser.add_argument(
         "--mqtt-discovery-prefix",
         help="MQTT discovery prefix",
-        default=os.environ.get("MQTT_DISCOVERY_PREFIX", getattr(config, "MQTT_DISCOVERY_PREFIX", "homeassistant")),
+        default=os.environ.get("MQTT_DISCOVERY_PREFIX", getattr(config_obj, "MQTT_DISCOVERY_PREFIX", "homeassistant")),
         type=str)
     parser.add_argument(
         "--mqtt-discovery-node-id",
         help="MQTT discovery node id",
-        default=os.environ.get("MQTT_DISCOVERY_NODE_ID", getattr(config, "MQTT_DISCOVERY_NODE_ID", "pixelperfectpi")),
+        default=os.environ.get("MQTT_DISCOVERY_NODE_ID", getattr(config_obj, "MQTT_DISCOVERY_NODE_ID", "pixelperfectpi")),
         type=str)
     parser.add_argument(
         "--mqtt-discovery-object-id",
         help="MQTT discovery object id",
-        default=os.environ.get("MQTT_DISCOVERY_OBJECT_ID", getattr(config, "MQTT_DISCOVERY_OBJECT_ID", socket.gethostname())),
+        default=os.environ.get("MQTT_DISCOVERY_OBJECT_ID", getattr(config_obj, "MQTT_DISCOVERY_OBJECT_ID", socket.gethostname())),
         type=str)
 
 
