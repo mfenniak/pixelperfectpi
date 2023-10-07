@@ -6,19 +6,20 @@ else:
     print("Emulating RGB matrix...")
 
 import argparse
-import time
-import sys
-import os
 import asyncio
-import pytz
-import types
+import importlib
 import mqtt
+import os
+import pytz
+import sys
+import time
+import types
 from typing import Literal
 
 config_obj: object | types.ModuleType = object()
 try:
-    import config
-    config_obj = config
+    # use import_module to avoid mypy from finding this file only when running local dev
+    config_obj = importlib.import_module("config")
 except ModuleNotFoundError:
     pass
 

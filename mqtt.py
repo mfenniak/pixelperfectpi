@@ -1,25 +1,24 @@
-import json
-import traceback
-import asyncio
 from aiomqtt import Client
 from dataclasses import dataclass
-from typing import Any, Literal
 from samplebase import SampleBase
-import backoff
-import socket
-import os
-import types
-import logging
+from typing import Any, Literal
 import argparse
+import asyncio
+import backoff
+import importlib
+import json
+import logging
+import os
+import socket
+import traceback
+import types
 
 config_obj: object | types.ModuleType = object()
 try:
-    import config
-    config_obj = config
+    # use import_module to avoid mypy from finding this file only when running local dev
+    config_obj = importlib.import_module("config")
 except ModuleNotFoundError:
     pass
-
-
 
 logging.getLogger('backoff').addHandler(logging.StreamHandler())
 
