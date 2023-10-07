@@ -19,7 +19,7 @@ import pytz
 import random
 import recurring_ical_events # type: ignore
 import os.path
-from typing import Set, TypeVar, Generic, Any, Literal, Callable
+from typing import Set, TypeVar, Generic, Any, Literal, Callable, Tuple
 
 RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
@@ -198,18 +198,22 @@ class CalendarDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: chan
             "future_events": near_future_events
         }
 
+# x, y, w, h
+Box = Tuple[int, int, int, int]
 
 class DrawPanel(Generic[T]):
-    def __init__(self, x: int, y: int, w: int, h: int, font_path: str, data_resolver: DataResolver[T]) -> None:
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+    def __init__(self, box: Box, font_path: str, data_resolver: DataResolver[T]) -> None:
+        self.box = box
         self.font_path = font_path
         self.buffer = Image.new("RGB", (self.w, self.h))
         self.imagedraw = ImageDraw.Draw(self.buffer)
         self.pil_font: None | ImageFont.ImageFont = None
         self.data_resolver = data_resolver
+
+    x = property(lambda self: self.box[0])
+    y = property(lambda self: self.box[1])
+    w = property(lambda self: self.box[2])
+    h = property(lambda self: self.box[3])
 
     def load_font(self, name: str) -> None:
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
@@ -326,14 +330,14 @@ class DrawPanel(Generic[T]):
 
 class MultiPanelPanel(DrawPanel[None]):
     # FIXME: correct types for panel_constructors
-    def __init__(self, panel_constructors: Any, x: int, y: int, w: int, h: int, font_path: str, time_per_frame: int = 5, **kwargs: Any) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, panel_constructors: Any, box: Box, font_path: str, time_per_frame: int = 5, **kwargs: Any) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
         # inner_kwargs = kwargs.copy()
         # # same width & height, but don't inherit the x/y position
         # inner_kwargs['x'] = 0
         # inner_kwargs['y'] = 0
         self.panels = [
-            constructor(x=0, y=0, w=w, h=h, font_path=font_path, **kwargs) for constructor in panel_constructors
+            constructor(box=(0, 0, self.w, self.h), font_path=font_path, **kwargs) for constructor in panel_constructors
         ]
         self.time_per_frame = time_per_frame
 
@@ -370,8 +374,8 @@ class MultiPanelPanel(DrawPanel[None]):
 
 
 class TimeComponent(DrawPanel[None]):
-    def __init__(self, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
         self.load_font("7x13")
 
     def do_draw(self, now: float, data: None, frame: int) -> None:
@@ -387,8 +391,8 @@ class TimeComponent(DrawPanel[None]):
 
 
 class DayOfWeekComponent(DrawPanel[None]):
-    def __init__(self, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
         self.load_font("7x13")
 
     def do_draw(self, now: float, data: None, frame: int) -> None:
@@ -403,8 +407,8 @@ class DayOfWeekComponent(DrawPanel[None]):
 
 
 class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=purpleair, x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, purpleair: PurpleAirDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=purpleair, box=box, font_path=font_path)
         self.load_font("7x13")
 
     def frame_count(self, data: dict[str, Any] | None) -> int:
@@ -422,8 +426,8 @@ class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
 
 
 class AqiComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=purpleair, x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, purpleair: PurpleAirDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=purpleair, box=box, font_path=font_path)
         self.load_font("7x13")
 
     def frame_count(self, data: dict[str, Any] | None) -> int:
@@ -443,8 +447,8 @@ class AqiComponent(DrawPanel[dict[str, Any]]):
 
 
 class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, env_canada: EnvironmentCanadaDataResolver, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=env_canada, x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, env_canada: EnvironmentCanadaDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=env_canada, box=box, font_path=font_path)
         self.load_font("4x6")
 
     def frame_count(self, data: dict[str, Any] | None) -> int:
@@ -465,8 +469,8 @@ class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
 
 
 class SunForecastComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, env_canada: EnvironmentCanadaDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=env_canada, x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, env_canada: EnvironmentCanadaDataResolver, display_tz: pytz.BaseTzInfo, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=env_canada, box=box, font_path=font_path)
         self.display_tz = display_tz
         self.load_font("5x8")
 
@@ -498,8 +502,8 @@ class SunForecastComponent(DrawPanel[dict[str, Any]]):
 
 
 class CalendarComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, x: int, y: int, w: int, h: int, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=calendar, x=x, y=y, w=w, h=h, font_path=font_path)
+    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, box: Box, font_path: str, **kwargs: Any) -> None:
+        super().__init__(data_resolver=calendar, box=box, font_path=font_path)
         self.display_tz = display_tz
         self.load_font("4x6")
 
@@ -587,14 +591,14 @@ class Clock(SampleBase):
             "font_path": self.font_path,
             "display_tz": self.display_tz,
         }
-        self.time_component = TimeComponent(29, 0, 35, 13, **addt_config)
+        self.time_component = TimeComponent((29, 0, 35, 13), **addt_config)
         self.curr_component = MultiPanelPanel(
             panel_constructors=[
                 lambda **kwargs: CurrentTemperatureComponent(purpleair=self.purpleair, **kwargs),
                 lambda **kwargs: DayOfWeekComponent(**kwargs),
             ],
             time_per_frame=5,
-            x=0, y=0, w=29, h=13,
+            box=(0, 0, 29, 13),
             **addt_config,
         )
         self.lower_panels = MultiPanelPanel(
@@ -605,7 +609,7 @@ class Clock(SampleBase):
                 lambda **kwargs: SunForecastComponent(env_canada=self.env_canada, **kwargs),
             ],
             time_per_frame=5,
-            x=0, y=13, w=64, h=19,
+            box=(0, 13, 64, 19),
             **addt_config,
         )
 
