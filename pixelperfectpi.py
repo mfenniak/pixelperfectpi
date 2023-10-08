@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
-from samplebase import EMULATED, SampleBase
-
-if EMULATED:
-    from RGBMatrixEmulator import RGBMatrix, graphics # type: ignore
-else:
-    from rgbmatrix import RGBMatrix, graphics # type: ignore
+from samplebase import SampleBase
+from rgbmatrix import RGBMatrix, RGBMatrixOptions # type: ignore
 
 from component.time import TimeComponent
 from data import DataResolver
@@ -33,8 +29,8 @@ T = TypeVar('T')
 
 
 class Clock(SampleBase):
-    def __init__(self, data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
-        super().__init__()
+    def __init__(self, rgbmatrixoptions: RGBMatrixOptions, rgbmatrix_factory: Any, data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
+        super().__init__(rgbmatrixoptions=rgbmatrixoptions, rgbmatrix_factory=rgbmatrix_factory)
         self.data_resolvers = data_resolvers
         self.time_component = time_component
         self.current_component = current_component

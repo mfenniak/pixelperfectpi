@@ -12,6 +12,22 @@ from dependency_injector import containers, providers
 from draw import MultiPanelPanel
 from pixelperfectpi import Clock
 import pytz
+import rgbmatrix # type: ignore
+import RGBMatrixEmulator # type: ignore
+
+def emulated_rgbmatrixoptions_factory(cols: int, rows: int) -> RGBMatrixEmulator.RGBMatrixOptions:
+    opts = RGBMatrixEmulator.RGBMatrixOptions()
+    opts.cols = cols
+    opts.rows = rows
+    return opts
+
+def real_rgbmatrixoptions_factory(cols: int, rows: int, hardware_mapping: str, gpio_slowdown: int) -> rgbmatrix.RGBMatrixOptions:
+    opts = rgbmatrix.RGBMatrixOptions()
+    opts.cols = cols
+    opts.rows = rows
+    opts.hardware_mapping = hardware_mapping
+    opts.gpio_slowdown = gpio_slowdown
+    return opts
 
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
@@ -99,6 +115,32 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
     )
 
+    emulated_rgbmatrixoptions: providers.Provider[RGBMatrixEmulator.RGBMatrixOptions] = providers.Singleton(
+        emulated_rgbmatrixoptions_factory,
+        cols=64,
+        rows=32,
+    )
+
+    real_rgbmatrixoptions: providers.Provider[rgbmatrix.RGBMatrixOptions] = providers.Singleton(
+        real_rgbmatrixoptions_factory,
+        cols=64,
+        rows=32,
+        hardware_mapping=config.gpio.hardware_mapping,
+        gpio_slowdown=config.gpio.slowdown,
+    )
+
+    rgbmatrixoptions = providers.Selector(
+        config.mode,
+        emulated=emulated_rgbmatrixoptions,
+        real=real_rgbmatrixoptions,
+    )
+
+    rgbmatrix_factory = providers.Selector(
+        config.mode,
+        emulated=providers.Callable(RGBMatrixEmulator.RGBMatrix, options=rgbmatrixoptions),
+        real=providers.Callable(rgbmatrix.RGBMatrix, options=rgbmatrixoptions),
+    )
+
     clock = providers.Singleton(
         Clock,
         data_resolvers=providers.List(
@@ -109,4 +151,6 @@ class Container(containers.DeclarativeContainer):
         time_component=time_component,
         current_component=current_component,
         lower_panels=lower_panels,
+        rgbmatrixoptions=rgbmatrixoptions,
+        rgbmatrix_factory=rgbmatrix_factory,
     )
