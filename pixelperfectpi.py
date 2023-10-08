@@ -2,6 +2,7 @@
 
 from samplebase import SampleBase
 from rgbmatrix import RGBMatrix, RGBMatrixOptions # type: ignore
+from dependency_injector.providers import Provider
 
 from component.time import TimeComponent
 from data import DataResolver
@@ -29,8 +30,8 @@ T = TypeVar('T')
 
 
 class Clock(SampleBase):
-    def __init__(self, rgbmatrixoptions: RGBMatrixOptions, rgbmatrix_factory: Any, data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
-        super().__init__(rgbmatrixoptions=rgbmatrixoptions, rgbmatrix_factory=rgbmatrix_factory)
+    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix], data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
+        super().__init__(rgbmatrix_provider=rgbmatrix_provider)
         self.data_resolvers = data_resolvers
         self.time_component = time_component
         self.current_component = current_component

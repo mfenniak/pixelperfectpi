@@ -135,10 +135,10 @@ class Container(containers.DeclarativeContainer):
         real=real_rgbmatrixoptions,
     )
 
-    rgbmatrix_factory = providers.Selector(
+    rgbmatrix = providers.Selector(
         config.mode,
-        emulated=providers.Callable(RGBMatrixEmulator.RGBMatrix, options=rgbmatrixoptions),
-        real=providers.Callable(rgbmatrix.RGBMatrix, options=rgbmatrixoptions),
+        emulated=providers.Factory(RGBMatrixEmulator.RGBMatrix, options=rgbmatrixoptions),
+        real=providers.Factory(rgbmatrix.RGBMatrix, options=rgbmatrixoptions),
     )
 
     clock = providers.Singleton(
@@ -151,6 +151,5 @@ class Container(containers.DeclarativeContainer):
         time_component=time_component,
         current_component=current_component,
         lower_panels=lower_panels,
-        rgbmatrixoptions=rgbmatrixoptions,
-        rgbmatrix_factory=rgbmatrix_factory,
+        rgbmatrix_provider=rgbmatrix.provider,
     )

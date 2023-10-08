@@ -26,16 +26,17 @@ if EMULATED:
 else:
     from rgbmatrix import RGBMatrix # type: ignore
 from rgbmatrix import RGBMatrixOptions
+from dependency_injector.providers import Provider
 
 
 class SampleBase(object):
-    def __init__(self, rgbmatrixoptions: RGBMatrixOptions, rgbmatrix_factory: Any) -> None:
-        self.rgbmatrixoptions = rgbmatrixoptions
-        self.rgbmatrix_factory = rgbmatrix_factory
+    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix]) -> None:
+        self.rgbmatrix_provider = rgbmatrix_provider
 
         self.state: Literal["ON"] | Literal["OFF"] = "ON"
         self.turn_on_event: asyncio.Event | None = None
         self.shutdown_event = asyncio.Event()
+        self.matrix: RGBMatrix | None = None
 
     async def run(self) -> None:
         raise NotImplemented
@@ -108,8 +109,8 @@ class SampleBase(object):
             elif self.state == "ON":
                 if self.matrix is None:
                     # self.matrix = RGBMatrix(options = self.rgbmatrixoptions)
-                    print("rgbmatrixoptions", repr(self.rgbmatrixoptions))
-                    self.matrix = self.rgbmatrix_factory(options = self.rgbmatrixoptions)
+                    # print("rgbmatrixoptions", repr(self.rgbmatrixoptions))
+                    self.matrix = self.rgbmatrix_provider()
                     await self.create_canvas(self.matrix)
 
                 await self.draw_frame(self.matrix)
