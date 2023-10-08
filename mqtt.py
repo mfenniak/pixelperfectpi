@@ -9,7 +9,6 @@ import json
 import logging
 import os
 import socket
-import traceback
 import types
 
 if TYPE_CHECKING:

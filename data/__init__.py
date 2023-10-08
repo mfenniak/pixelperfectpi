@@ -1,3 +1,3 @@
-from .resolver import DataResolver
+from .resolver import DataResolver, StaticDataResolver
 
-__all__ = [ 'DataResolver' ]
+__all__ = [ 'DataResolver', 'StaticDataResolver' ]

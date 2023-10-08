@@ -12,6 +12,7 @@ setup(
         'di',
         'draw/__init__',
         'draw/drawpanel',
+        'draw/multipanelpanel',
         'mqtt',
         'pixelperfectpi',
         'samplebase',

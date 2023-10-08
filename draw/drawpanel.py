@@ -1,14 +1,6 @@
-from lxml import etree # type: ignore
-from PIL import Image, ImageFont, ImageDraw, ImageColor
-import time
-import asyncio
-import aiohttp
-import icalendar # type: ignore
-import datetime
-import pytz
-import recurring_ical_events # type: ignore
+from PIL import Image, ImageFont, ImageDraw
 import os.path
-from typing import Set, TypeVar, Generic, Any, Literal, Tuple
+from typing import TypeVar, Generic, Literal
 
 from . import Box
 from data import DataResolver
