@@ -2,15 +2,10 @@ from aiomqtt import Client
 from dataclasses import dataclass
 from service import Service
 from typing import Any, Literal, TYPE_CHECKING
-import argparse
 import asyncio
 import backoff
-import importlib
 import json
 import logging
-import os
-import socket
-import types
 
 if TYPE_CHECKING:
     from displaybase import DisplayBase

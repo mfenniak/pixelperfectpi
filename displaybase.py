@@ -1,5 +1,4 @@
 import asyncio
-import mqtt
 import sys
 from typing import Literal, List
 from rgbmatrix import RGBMatrix # type: ignore

@@ -1,4 +1,4 @@
-from typing import Any, Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from displaybase import DisplayBase

@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
 from displaybase import DisplayBase
-from rgbmatrix import RGBMatrix, RGBMatrixOptions # type: ignore
+from rgbmatrix import RGBMatrix # type: ignore
 from dependency_injector.providers import Provider
 
 from component.time import TimeComponent
