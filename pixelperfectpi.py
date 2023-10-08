@@ -11,154 +11,22 @@ import time
 import asyncio
 import datetime
 import pytz
-from typing import Set, TypeVar, Any
-from data.resolver import StaticDataResolver
+from typing import Set, TypeVar, Any, List
 from data.purpleair import PurpleAirDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
 from data.calendar import CalendarDataResolver
-
+from data import DataResolver
 from draw import Box
 from draw.drawpanel import DrawPanel
 from draw.multipanelpanel import MultiPanelPanel
 
 from component.time import TimeComponent
-from component.dayofweek import DayOfWeekComponent
-from component.currenttemp import CurrentTemperatureComponent
 
 T = TypeVar('T')
 
 
 
-class AqiComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=purpleair, box=box, font_path=font_path)
-        self.load_font("7x13")
 
-    def frame_count(self, data: dict[str, Any] | None) -> int:
-        if data == None:
-            return 0
-        else:
-            return 1
-
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        self.fill((0, 16, 0))
-        if data is None:
-            return
-        (red, green, blue) = data["p25aqic"]
-        textColor = (red, green, blue)
-        aqi = data['p25aqiavg']
-        self.draw_text(textColor, f"AQI {aqi:.0f}")
-
-
-class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, env_canada: EnvironmentCanadaDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=env_canada, box=box, font_path=font_path)
-        self.load_font("4x6")
-
-    def frame_count(self, data: dict[str, Any] | None) -> int:
-        if data == None:
-            return 0
-        else:
-            return 1
-
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        self.fill((16, 0, 0))
-        if data is None:
-            return
-        n = data['forecast']['name']
-        s = data['forecast']['text_summary']
-        t = data['forecast']['type'].capitalize()
-        deg_c = data['forecast']['deg_c']
-        self.draw_text((255, 255, 255), f"{n} {s} {t} {deg_c:.0f}°")
-
-
-class SunForecastComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, env_canada: EnvironmentCanadaDataResolver, display_tz: pytz.BaseTzInfo, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=env_canada, box=box, font_path=font_path)
-        self.display_tz = display_tz
-        self.load_font("5x8")
-
-    def frame_count(self, data: dict[str, Any] | None) -> int:
-        if data == None:
-            return 0
-        else:
-            return 1
-
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        if data is None:
-            return
-
-        now_dt = datetime.datetime.now(self.display_tz)
-        sunrise = data['sunrise']
-        sunset = data['sunset']
-
-        if sunrise > now_dt and sunrise < sunset:
-            self.fill((16, 16, 0))
-            sun = "Sunrise"
-            color = (255,167,0)
-            dt = sunrise.astimezone(self.display_tz).strftime("%-I:%M")
-        else:
-            self.fill((0, 0, 16))
-            sun = "Sunset"
-            color = (80,80,169)
-            dt = sunset.astimezone(self.display_tz).strftime("%-I:%M")
-        self.draw_text(color, f"{sun} at {dt}")
-
-
-class CalendarComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=calendar, box=box, font_path=font_path)
-        self.display_tz = display_tz
-        self.load_font("4x6")
-
-    def frame_count(self, data: dict[str, Any] | None) -> int:
-        if data is None:
-            return 0
-        return min(len(data["future_events"]), 3) # no more than this many events
-
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        self.fill((0, 0, 16))
-
-        if data is None:
-            return
-
-        # FIXME: color is synced to the time, but, only by copy-and-paste
-        hue = int(now*50 % 360)
-        textColor = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-
-        (dt, summary) = data["future_events"][frame]
-
-        preamble = ""
-        now_dt = datetime.datetime.now(self.display_tz)
-
-        if dt.time() == datetime.time(0,0,0):
-            # full day event probably
-            if dt.date() == now_dt.date():
-                preamble = "tdy"
-            elif dt.date() == (now_dt + datetime.timedelta(days=1)).date():
-                preamble = dt.strftime("tmw")
-            elif (dt - now_dt) < datetime.timedelta(days=7):
-                preamble = dt.strftime("%a")
-            else:
-                preamble = dt.strftime("%a %-d")
-        else:
-            # timed event
-            if dt.date() == now_dt.date():
-                preamble = dt.strftime("%-I:%M%p").replace(":00", "")
-            elif dt.date() == (now_dt + datetime.timedelta(days=1)).date():
-                preamble = dt.strftime("tmw %-I%p")
-            elif (dt - now_dt) < datetime.timedelta(days=7):
-                preamble = dt.strftime("%a %-I%p")
-            else:
-                preamble = dt.strftime("%a %-d")
-
-        if preamble.endswith("M"): # PM/AM -> P/A; no strftime option for that
-            preamble = preamble[:-1]
-        if preamble.endswith("P") or preamble.endswith("A"): # lowercase this
-            preamble = preamble[:-1] + preamble[-1].lower()
-
-        text = f"{preamble}: {summary}"
-        self.draw_text(textColor, text.encode("ascii", errors="ignore").decode("ascii"))
 
 
 # TODO List:
@@ -177,37 +45,15 @@ class CalendarComponent(DrawPanel[dict[str, Any]]):
 
 
 class Clock(SampleBase):
-    def __init__(self, purpleair: PurpleAirDataResolver, env_canada: EnvironmentCanadaDataResolver, calendar: CalendarDataResolver, time_component: TimeComponent, current_component: MultiPanelPanel) -> None:
+    def __init__(self, data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
         super().__init__()
-        self.purpleair = purpleair
-        self.env_canada = env_canada
-        self.calendar = calendar
+        self.data_resolvers = data_resolvers
         self.time_component = time_component
         self.current_component = current_component
+        self.lower_panels = lower_panels
 
     def pre_run(self) -> None:
-        self.data_resolvers = [
-            self.purpleair,
-            self.env_canada,
-            self.calendar,
-        ]
         self.background_tasks: Set[asyncio.Task[Any]] = set()
-
-        addt_config={
-            "font_path": self.font_path,
-            "display_tz": self.display_tz,
-        }
-        self.lower_panels = MultiPanelPanel(
-            panel_constructors=[
-                lambda **kwargs: AqiComponent(purpleair=self.purpleair, **kwargs),
-                lambda **kwargs: CalendarComponent(calendar=self.calendar, **kwargs),
-                lambda **kwargs: WeatherForecastComponent(env_canada=self.env_canada, **kwargs),
-                lambda **kwargs: SunForecastComponent(env_canada=self.env_canada, **kwargs),
-            ],
-            time_per_frame=5,
-            box=(0, 13, 64, 19),
-            **addt_config,
-        )
 
     async def create_canvas(self, matrix: RGBMatrix) -> None:
         self.offscreen_canvas = matrix.CreateFrameCanvas()

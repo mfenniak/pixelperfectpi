@@ -1,13 +1,16 @@
-from dependency_injector import containers, providers
-from data.purpleair import PurpleAirDataResolver
-from data.envcanada import EnvironmentCanadaDataResolver
-from data.calendar import CalendarDataResolver
-from component.time import TimeComponent
-from pixelperfectpi import Clock
-from component.dayofweek import DayOfWeekComponent
+from component.aqi import AqiComponent
+from component.calendar import CalendarComponent
 from component.currenttemp import CurrentTemperatureComponent
+from component.dayofweek import DayOfWeekComponent
+from component.sunforecast import SunForecastComponent
+from component.time import TimeComponent
+from component.weatherforecast import WeatherForecastComponent
+from data.calendar import CalendarDataResolver
+from data.envcanada import EnvironmentCanadaDataResolver
+from data.purpleair import PurpleAirDataResolver
+from dependency_injector import containers, providers
 from draw import MultiPanelPanel
-
+from pixelperfectpi import Clock
 import pytz
 
 class Container(containers.DeclarativeContainer):
@@ -31,7 +34,6 @@ class Container(containers.DeclarativeContainer):
     time_component = providers.Singleton(
         TimeComponent,
         box=(29, 0, 35, 13),
-        # , **addt_config)
         font_path=config.font_path,
     )
 
@@ -57,11 +59,54 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
     )
 
+    lower_position_inner = (0, 0, 64, 19)
+    lower_position = (0, 13, 64, 19)
+    aqi_component = providers.Singleton(
+        AqiComponent,
+        purpleair=purpleair,
+        box=lower_position_inner,
+        font_path=config.font_path,
+    )
+    calendar_component = providers.Singleton(
+        CalendarComponent,
+        calendar=calendar,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        display_tz=display_tz,
+    )
+    weather_forecast_component = providers.Singleton(
+        WeatherForecastComponent,
+        env_canada=env_canada,
+        box=lower_position_inner,
+        font_path=config.font_path,
+    )
+    sun_forecast_component = providers.Singleton(
+        SunForecastComponent,
+        env_canada=env_canada,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        display_tz=display_tz,
+    )
+    lower_panels = providers.Singleton(
+        MultiPanelPanel,
+        panels=providers.List(
+            aqi_component,
+            calendar_component,
+            weather_forecast_component,
+            sun_forecast_component,
+        ),
+        box=lower_position,
+        font_path=config.font_path,
+    )
+
     clock = providers.Singleton(
         Clock,
-        purpleair=purpleair,
-        env_canada=env_canada,
-        calendar=calendar,
+        data_resolvers=providers.List(
+            purpleair,
+            env_canada,
+            calendar,
+        ),
         time_component=time_component,
         current_component=current_component,
+        lower_panels=lower_panels,
     )
