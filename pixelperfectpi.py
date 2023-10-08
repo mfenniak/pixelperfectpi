@@ -11,6 +11,7 @@ from PIL import Image
 from typing import Set, TypeVar, Any, List
 import asyncio
 import time
+from service import Service
 
 T = TypeVar('T')
 
@@ -30,8 +31,8 @@ T = TypeVar('T')
 
 
 class Clock(DisplayBase):
-    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix], data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
-        super().__init__(rgbmatrix_provider=rgbmatrix_provider)
+    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix], data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel, shutdown_event: asyncio.Event, services: List[Service]) -> None:
+        super().__init__(rgbmatrix_provider=rgbmatrix_provider, shutdown_event=shutdown_event, services=services)
         self.data_resolvers = data_resolvers
         self.time_component = time_component
         self.current_component = current_component

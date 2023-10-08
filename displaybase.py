@@ -1,14 +1,16 @@
 import asyncio
 import mqtt
 import sys
-from typing import Literal
+from typing import Literal, List
 from rgbmatrix import RGBMatrix # type: ignore
 from dependency_injector.providers import Provider
+from service import Service
 
 
 class DisplayBase(object):
-    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix]) -> None:
+    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix], shutdown_event: asyncio.Event, services: List[Service]) -> None:
         self.rgbmatrix_provider = rgbmatrix_provider
+        self.services = services
 
         self.state: Literal["ON"] | Literal["OFF"] = "ON"
         self.turn_on_event: asyncio.Event | None = None
@@ -24,7 +26,8 @@ class DisplayBase(object):
         assert self.turn_on_event is not None
         self.state = "ON"
         self.turn_on_event.set()
-        # await self.mqtt.status_update(self.state)
+        for service in self.services:
+            await service.status_update(self.state)
 
     async def turn_off(self) -> None:
         if self.state == "OFF":
@@ -32,12 +35,10 @@ class DisplayBase(object):
         assert self.turn_on_event is None
         self.turn_on_event = asyncio.Event()
         self.state = "OFF"
-        # await self.mqtt.status_update(self.state)
+        for service in self.services:
+            await service.status_update(self.state)
 
     def process(self) -> None:
-        # mqtt_config = mqtt.get_config(self.args)
-        # self.mqtt = mqtt.MqttServer(mqtt_config, self, self.shutdown_event)
-
         self.matrix = None
         try:
             # Start loop
@@ -61,7 +62,9 @@ class DisplayBase(object):
         raise NotImplemented
 
     async def async_run(self) -> None:
-        # self.mqtt.start()
+        for service in self.services:
+            print("service", service)
+            await service.start(self)
         self.pre_run()
         await self.main_loop()
 
@@ -85,8 +88,6 @@ class DisplayBase(object):
 
             elif self.state == "ON":
                 if self.matrix is None:
-                    # self.matrix = RGBMatrix(options = self.rgbmatrixoptions)
-                    # print("rgbmatrixoptions", repr(self.rgbmatrixoptions))
                     self.matrix = self.rgbmatrix_provider()
                     await self.create_canvas(self.matrix)
 

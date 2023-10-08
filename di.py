@@ -10,7 +10,9 @@ from data.envcanada import EnvironmentCanadaDataResolver
 from data.purpleair import PurpleAirDataResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
+from mqtt import MqttConfig, MqttServer
 from pixelperfectpi import Clock
+import asyncio
 import pytz
 import rgbmatrix # type: ignore
 import RGBMatrixEmulator # type: ignore
@@ -141,6 +143,25 @@ class Container(containers.DeclarativeContainer):
         real=providers.Factory(rgbmatrix.RGBMatrix, options=rgbmatrixoptions),
     )
 
+    mqtt_config = providers.Singleton(
+        MqttConfig,
+        hostname=config.mqtt.hostname,
+        port=config.mqtt.port,
+        username=config.mqtt.username,
+        password=config.mqtt.password,
+        discovery_prefix=config.mqtt.discovery.prefix,
+        discovery_node_id=config.mqtt.discovery.node_id,
+        discovery_object_id=config.mqtt.discovery.object_id,
+    )
+
+    shutdown_event = providers.Singleton(asyncio.Event)
+
+    mqtt_server = providers.Singleton(
+        MqttServer,
+        config=mqtt_config,
+        shutdown_event=shutdown_event,
+    )
+
     clock = providers.Singleton(
         Clock,
         data_resolvers=providers.List(
@@ -152,4 +173,8 @@ class Container(containers.DeclarativeContainer):
         current_component=current_component,
         lower_panels=lower_panels,
         rgbmatrix_provider=rgbmatrix.provider,
+        shutdown_event=shutdown_event,
+        services=providers.List(
+            mqtt_server
+        )
     )

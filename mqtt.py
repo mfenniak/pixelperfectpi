@@ -1,5 +1,6 @@
 from aiomqtt import Client
 from dataclasses import dataclass
+from service import Service
 from typing import Any, Literal, TYPE_CHECKING
 import argparse
 import asyncio
@@ -13,13 +14,6 @@ import types
 
 if TYPE_CHECKING:
     from displaybase import DisplayBase
-
-config_obj: object | types.ModuleType = object()
-try:
-    # use import_module to avoid mypy from finding this file only when running local dev
-    config_obj = importlib.import_module("config")
-except ModuleNotFoundError:
-    pass
 
 logging.getLogger('backoff').addHandler(logging.StreamHandler())
 
@@ -64,27 +58,26 @@ def on_runtime_error(e: Exception) -> bool:
     # give up when we have a RuntimeError because that can include the asyncio event loop shutting down
     return isinstance(e, RuntimeError)
 
-class MqttServer(object):
-    def __init__(self, config: MqttConfig, clock: "DisplayBase", shutdown_event: asyncio.Event):
+class MqttServer(Service):
+    def __init__(self, config: MqttConfig, shutdown_event: asyncio.Event):
         self.config = config
-        self.clock = clock
         self.shutdown_event = shutdown_event
         self.status_update_queue: asyncio.Queue[str] = asyncio.Queue()
 
-    def start(self) -> None:
+    async def start(self, clock: "DisplayBase") -> None:
         if self.config.hostname is None:
             return
-        asyncio.create_task(self.serve_forever())
+        asyncio.create_task(self.serve_forever(clock))
 
-    async def serve_forever(self) -> None:
+    async def serve_forever(self, clock: "DisplayBase") -> None:
         while not self.shutdown_event.is_set():
             try:
-                await self.connect_and_listen_mqtt()
+                await self.connect_and_listen_mqtt(clock)
             except Exception as e:
                 print("Exception starting up connect_and_listen_mqtt", e)
 
     @backoff.on_exception(backoff.expo, Exception, giveup=on_runtime_error, raise_on_giveup=False)  # Catch all exceptions
-    async def connect_and_listen_mqtt(self) -> None:
+    async def connect_and_listen_mqtt(self, clock: "DisplayBase") -> None:
         assert self.config.hostname is not None
         client = Client(
             hostname=self.config.hostname,
@@ -93,12 +86,12 @@ class MqttServer(object):
             password=self.config.password
         )
         async with client:
-            await self.status_update(self.clock.state)
+            await self.status_update(clock.state)
 
             try:
                 await self.publish_discovery(client)
                 await self.publish_availability(client, "online")
-                await self.process_messages_forever(client)
+                await self.process_messages_forever(client, clock)
             finally:
                 try:
                     await self.publish_availability(client, "offline")
@@ -120,7 +113,7 @@ class MqttServer(object):
             availability,
             qos=1, retain=True)
 
-    async def process_messages_forever(self, client: Client) -> None:
+    async def process_messages_forever(self, client: Client, clock: "DisplayBase") -> None:
         async with client.messages() as messages:
             # Subscribe to the topic where we'll receive commands for the switch
             await client.subscribe(get_cmd_topic(self.config))
@@ -137,9 +130,9 @@ class MqttServer(object):
                 if messages_next.done():
                     cmd = messages_next.result().payload.decode().upper()
                     if cmd == "ON":
-                        await self.clock.turn_on()
+                        await clock.turn_on()
                     elif cmd == "OFF":
-                        await self.clock.turn_off()
+                        await clock.turn_off()
                     # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
                     messages_next = asyncio.create_task(anext(messages)) # type: ignore
 
@@ -150,49 +143,3 @@ class MqttServer(object):
     
     async def status_update(self, state: Literal["ON"] | Literal["OFF"]) -> None:
         await self.status_update_queue.put(state)
-
-
-def config_arg_parser(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--mqtt-host",
-        help="MQTT hostname",
-        default=os.environ.get("MQTT_HOST", getattr(config_obj, "MQTT_HOST", None)),
-        type=str)
-    parser.add_argument("--mqtt-port",
-        help="MQTT port",
-        default=os.environ.get("MQTT_PORT", getattr(config_obj, "MQTT_PORT", 1883)),
-        type=int)
-    parser.add_argument("--mqtt-username",
-        help="MQTT username",
-        default=os.environ.get("MQTT_USERNAME", getattr(config_obj, "MQTT_USERNAME", None)),
-        type=str)
-    parser.add_argument("--mqtt-password",
-        help="MQTT password",
-        default=os.environ.get("MQTT_PASSWORD", getattr(config_obj, "MQTT_PASSWORD", None)),
-        type=str)
-    parser.add_argument(
-        "--mqtt-discovery-prefix",
-        help="MQTT discovery prefix",
-        default=os.environ.get("MQTT_DISCOVERY_PREFIX", getattr(config_obj, "MQTT_DISCOVERY_PREFIX", "homeassistant")),
-        type=str)
-    parser.add_argument(
-        "--mqtt-discovery-node-id",
-        help="MQTT discovery node id",
-        default=os.environ.get("MQTT_DISCOVERY_NODE_ID", getattr(config_obj, "MQTT_DISCOVERY_NODE_ID", "pixelperfectpi")),
-        type=str)
-    parser.add_argument(
-        "--mqtt-discovery-object-id",
-        help="MQTT discovery object id",
-        default=os.environ.get("MQTT_DISCOVERY_OBJECT_ID", getattr(config_obj, "MQTT_DISCOVERY_OBJECT_ID", socket.gethostname())),
-        type=str)
-
-
-def get_config(args: argparse.Namespace) -> MqttConfig:
-    return MqttConfig(
-        hostname=args.mqtt_host,
-        port=args.mqtt_port,
-        username=args.mqtt_username,
-        password=args.mqtt_password,
-        discovery_prefix=args.mqtt_discovery_prefix,
-        discovery_node_id=args.mqtt_discovery_node_id,
-        discovery_object_id=args.mqtt_discovery_object_id,
-    )
