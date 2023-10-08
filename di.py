@@ -15,9 +15,13 @@ from pixelperfectpi import Clock
 import asyncio
 import pytz
 import rgbmatrix # type: ignore
-import RGBMatrixEmulator # type: ignore
+try:
+    import RGBMatrixEmulator # type: ignore
+except ImportError:
+    # Not available on non x86-64 systems; optional in flake.nix
+    pass
 
-def emulated_rgbmatrixoptions_factory(cols: int, rows: int) -> RGBMatrixEmulator.RGBMatrixOptions:
+def emulated_rgbmatrixoptions_factory(cols: int, rows: int) -> "RGBMatrixEmulator.RGBMatrixOptions":
     opts = RGBMatrixEmulator.RGBMatrixOptions()
     opts.cols = cols
     opts.rows = rows
@@ -117,7 +121,7 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
     )
 
-    emulated_rgbmatrixoptions: providers.Provider[RGBMatrixEmulator.RGBMatrixOptions] = providers.Singleton(
+    emulated_rgbmatrixoptions: providers.Provider["RGBMatrixEmulator.RGBMatrixOptions"] = providers.Singleton(
         emulated_rgbmatrixoptions_factory,
         cols=64,
         rows=32,

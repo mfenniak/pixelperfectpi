@@ -28,7 +28,7 @@
             ps.icalendar
             ps.lxml
             ps.mypy
-            # ps.pylint
+            ps.pylint
             ps.pytz
             ps.recurring-ical-events
             ps.types-pillow
