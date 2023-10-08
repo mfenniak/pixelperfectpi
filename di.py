@@ -143,7 +143,8 @@ class Container(containers.DeclarativeContainer):
 
     rgbmatrix = providers.Selector(
         config.mode,
-        emulated=providers.Factory(RGBMatrixEmulator.RGBMatrix, options=rgbmatrixoptions),
+        # Callable so that when RGBMatrixEmulator is not imported (on PI), it isn't accessed
+        emulated=providers.Callable(lambda **kwargs: RGBMatrixEmulator.RGBMatrix(**kwargs), options=rgbmatrixoptions),
         real=providers.Factory(rgbmatrix.RGBMatrix, options=rgbmatrixoptions),
     )
 

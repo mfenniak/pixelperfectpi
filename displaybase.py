@@ -27,6 +27,7 @@ class DisplayBase(object):
         self.turn_on_event.set()
         for service in self.services:
             await service.status_update(self.state)
+        self.turn_on_event = None
 
     async def turn_off(self) -> None:
         if self.state == "OFF":
@@ -62,7 +63,6 @@ class DisplayBase(object):
 
     async def async_run(self) -> None:
         for service in self.services:
-            print("service", service)
             await service.start(self)
         self.pre_run()
         await self.main_loop()
