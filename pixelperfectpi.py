@@ -11,101 +11,17 @@ from PIL import Image, ImageFont, ImageDraw, ImageColor
 import time
 import asyncio
 import aiohttp
-import traceback
-import re
 import icalendar # type: ignore
 import datetime
 import pytz
-import random
 import recurring_ical_events # type: ignore
 import os.path
-from typing import Set, TypeVar, Generic, Any, Literal, Callable, Tuple
+from typing import Set, TypeVar, Generic, Any, Literal, Tuple
+from data.resolver import DataResolver, ScheduledDataResolver, StaticDataResolver
+from data.purpleair import PurpleAirDataResolver
 
-RGB_RE = re.compile(r"rgb\((?P<red>[0-9]+),(?P<green>[0-9]+),(?P<blue>[0-9]+)\)")
 
 T = TypeVar('T')
-
-class DataResolver(Generic[T]):
-    def __init__(self) -> None:
-        self.data: None | T = None
-
-    async def maybe_refresh(self, now: float) -> None:
-        return
-
-class ScheduledDataResolver(DataResolver[T]):
-    def __init__(self, refresh_interval: float) -> None:
-        jitter_frac = 1 + (random.random() * 0.2) # always jitter longer so we don't drop below refresh_interval
-        self.refresh_interval = (refresh_interval * jitter_frac)
-        self.last_refresh: float = 0
-        self.lock = asyncio.Lock()
-        self.data: None | T = None
-
-    async def maybe_refresh(self, now: float) -> None:
-        delta = now - self.last_refresh
-        if delta > self.refresh_interval:
-            try:
-                await asyncio.wait_for(self.lock.acquire(), timeout=0.0000001)
-                try:
-                    await self.refresh()
-                    self.last_refresh = now
-                finally:
-                    self.lock.release()
-            except TimeoutError:
-                pass
-
-    async def do_collection(self) -> None | T:
-        raise NotImplemented
-
-    async def refresh(self) -> None:
-        try:
-            cr = self.do_collection()
-            self.data = await cr
-        except:
-            # FIXME: log error
-            print("do_collection error occurred")
-            traceback.print_exc()
-            self.data = None
-
-
-class StaticDataResolver(DataResolver[T]):
-    def __init__(self, static_data: T):
-        super().__init__()
-        self.data = static_data
-
-
-class PurpleAirDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: change to a dataclass
-    def __init__(self) -> None:
-        super().__init__(refresh_interval=60)
-
-    async def do_collection(self) -> dict[str, Any]:
-        async with aiohttp.ClientSession() as session:
-            async with session.get('http://10.156.95.135/json') as response:
-                if response.status != 200:
-                    raise Exception(f"Unexpected status code: {response.status}")
-                purpleair: dict[str, Any] = await response.json()
-
-                color = purpleair["p25aqic"] # string, eg. rgb(87,237,0)
-                m = RGB_RE.match(color)
-                assert m is not None
-                red, green, blue = int(m.group("red")), int(m.group("green")), int(m.group("blue")) 
-                purpleair["p25aqic"] = (red, green, blue)
-
-                purpleair["p25aqiavg"] = (purpleair['pm2.5_aqi'] + purpleair['pm2.5_aqi_b']) / 2
-
-                temp_f = purpleair["current_temp_f"]
-                # PurpleAir's API has a "Raw temperature".  https://community.purpleair.com/t/purpleair-sensors-functional-overview/150
-                # They correct it -8 deg F to get a good approximation of ourdoor ambient temp.
-                temp_f -= 8
-                temp_c = (temp_f - 32) * 5 / 9
-                purpleair["current_temp_c"] = temp_c
-
-                # {'SensorId': '...',
-                # 'p25aqic_b': 'rgb(55,234,0)'
-                # 'pm2.5_aqi_b': 30
-                # 'pm2.5_aqi': 35, 
-                # 'p25aqic': 'rgb(87,237,0)', 
-                # 'current_temp_f': 62, 
-                return purpleair
 
 
 class EnvironmentCanadaDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: change to a dataclass
@@ -573,11 +489,12 @@ class CalendarComponent(DrawPanel[dict[str, Any]]):
 
 
 class Clock(SampleBase):
-    def __init__(self) -> None:
+    def __init__(self, purpleair: PurpleAirDataResolver) -> None:
         super().__init__()
+        self.purpleair = purpleair
+        print("Clock created: ", self.purpleair)
 
     def pre_run(self) -> None:
-        self.purpleair = PurpleAirDataResolver()
         self.env_canada = EnvironmentCanadaDataResolver()
         self.calendar = CalendarDataResolver(self.ical_url, self.display_tz)
         self.data_resolvers = [
@@ -632,9 +549,3 @@ class Clock(SampleBase):
         self.offscreen_canvas.SetImage(self.buffer, 0, 0)
 
         self.offscreen_canvas = matrix.SwapOnVSync(self.offscreen_canvas)
-
-
-# Main function
-if __name__ == "__main__":
-    run_text = Clock()
-    run_text.process()

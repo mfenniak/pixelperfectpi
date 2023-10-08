@@ -5,8 +5,8 @@ import os
 
 setup(
     name="pixelperfectpi",
-    py_modules=['samplebase', 'mqtt'],
-    scripts=['pixelperfectpi.py'],
+    py_modules=['mqtt', 'samplebase', 'pixelperfectpi', 'di', 'data/purpleair', 'data/resolver', 'data/__init__'],
+    scripts=['main.py'],
     data_files=[
         ("fonts", [f"fonts/{x}" for x in os.listdir("fonts")])
     ]
