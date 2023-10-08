@@ -6,28 +6,16 @@ if EMULATED:
     from RGBMatrixEmulator import RGBMatrix, graphics # type: ignore
 else:
     from rgbmatrix import RGBMatrix, graphics # type: ignore
-from PIL import Image, ImageColor
-import time
-import asyncio
-import datetime
-import pytz
-from typing import Set, TypeVar, Any, List
-from data.purpleair import PurpleAirDataResolver
-from data.envcanada import EnvironmentCanadaDataResolver
-from data.calendar import CalendarDataResolver
-from data import DataResolver
-from draw import Box
-from draw.drawpanel import DrawPanel
-from draw.multipanelpanel import MultiPanelPanel
 
 from component.time import TimeComponent
+from data import DataResolver
+from draw.multipanelpanel import MultiPanelPanel
+from PIL import Image
+from typing import Set, TypeVar, Any, List
+import asyncio
+import time
 
 T = TypeVar('T')
-
-
-
-
-
 
 # TODO List:
 # - Add icons - like a lightning bolt for power, or, sun^ sunv for high and low?
