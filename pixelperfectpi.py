@@ -22,51 +22,11 @@ from draw.drawpanel import DrawPanel
 from draw.multipanelpanel import MultiPanelPanel
 
 from component.time import TimeComponent
-
+from component.dayofweek import DayOfWeekComponent
+from component.currenttemp import CurrentTemperatureComponent
 
 T = TypeVar('T')
 
-
-
-
-
-
-
-
-
-class DayOfWeekComponent(DrawPanel[None]):
-    def __init__(self, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
-        self.load_font("7x13")
-
-    def do_draw(self, now: float, data: None, frame: int) -> None:
-        self.fill((0, 0, 0))
-
-        # FIXME: color is synced to the time, but, only by copy-and-paste
-        hue = int(now*50 % 360)
-        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-
-        timestr = time.strftime("%a")
-        self.draw_text(color, timestr)
-
-
-class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=purpleair, box=box, font_path=font_path)
-        self.load_font("7x13")
-
-    def frame_count(self, data: dict[str, Any] | None) -> int:
-        if data is None:
-            return 0
-        else:
-            return 1
-
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        self.fill((0, 0, 0))
-        if data is None:
-            return
-        curr_c = data["current_temp_c"]
-        self.draw_text((128,128,128), f"{curr_c:.0f}°")
 
 
 class AqiComponent(DrawPanel[dict[str, Any]]):
@@ -217,12 +177,13 @@ class CalendarComponent(DrawPanel[dict[str, Any]]):
 
 
 class Clock(SampleBase):
-    def __init__(self, purpleair: PurpleAirDataResolver, env_canada: EnvironmentCanadaDataResolver, calendar: CalendarDataResolver, time_component: TimeComponent) -> None:
+    def __init__(self, purpleair: PurpleAirDataResolver, env_canada: EnvironmentCanadaDataResolver, calendar: CalendarDataResolver, time_component: TimeComponent, current_component: MultiPanelPanel) -> None:
         super().__init__()
         self.purpleair = purpleair
         self.env_canada = env_canada
         self.calendar = calendar
         self.time_component = time_component
+        self.current_component = current_component
 
     def pre_run(self) -> None:
         self.data_resolvers = [
@@ -236,16 +197,6 @@ class Clock(SampleBase):
             "font_path": self.font_path,
             "display_tz": self.display_tz,
         }
-        # self.time_component = TimeComponent((29, 0, 35, 13), **addt_config)
-        self.curr_component = MultiPanelPanel(
-            panel_constructors=[
-                lambda **kwargs: CurrentTemperatureComponent(purpleair=self.purpleair, **kwargs),
-                lambda **kwargs: DayOfWeekComponent(**kwargs),
-            ],
-            time_per_frame=5,
-            box=(0, 0, 29, 13),
-            **addt_config,
-        )
         self.lower_panels = MultiPanelPanel(
             panel_constructors=[
                 lambda **kwargs: AqiComponent(purpleair=self.purpleair, **kwargs),
@@ -272,7 +223,7 @@ class Clock(SampleBase):
     async def draw_frame(self, matrix: RGBMatrix) -> None:
         now = time.time()
         self.time_component.draw(self.buffer, now=now, frame=0, data=None) # FIXME: find a way to remove frame/data params
-        self.curr_component.draw(self.buffer, now=now, frame=0, data=None)
+        self.current_component.draw(self.buffer, now=now, frame=0, data=None)
         self.lower_panels.draw(self.buffer, now=now, frame=0, data=None)
         self.offscreen_canvas.SetImage(self.buffer, 0, 0)
 

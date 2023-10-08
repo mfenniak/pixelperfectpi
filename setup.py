@@ -7,6 +7,8 @@ setup(
     name="pixelperfectpi",
     py_modules=[
         'component/__init__',
+        'component/currenttemp',
+        'component/dayofweek',
         'component/time',
         'data/__init__',
         'data/calendar',

@@ -2,18 +2,23 @@ from .drawpanel import DrawPanel
 from typing import Any
 from .box import Box
 from data import StaticDataResolver
+from typing import List
 
 class MultiPanelPanel(DrawPanel[None]):
     # FIXME: correct types for panel_constructors
-    def __init__(self, panel_constructors: Any, box: Box, font_path: str, time_per_frame: int = 5, **kwargs: Any) -> None:
+    def __init__(self, box: Box, font_path: str, panel_constructors: Any = None, panels: List[DrawPanel[Any]] | None = None, time_per_frame: int = 5, **kwargs: Any) -> None:
         super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
         # inner_kwargs = kwargs.copy()
         # # same width & height, but don't inherit the x/y position
         # inner_kwargs['x'] = 0
         # inner_kwargs['y'] = 0
-        self.panels = [
-            constructor(box=(0, 0, self.w, self.h), font_path=font_path, **kwargs) for constructor in panel_constructors
-        ]
+        if panel_constructors is not None:
+            self.panels = [
+                constructor(box=(0, 0, self.w, self.h), font_path=font_path, **kwargs) for constructor in panel_constructors
+            ]
+        else:
+            assert panels is not None
+            self.panels = panels
         self.time_per_frame = time_per_frame
 
     def do_draw(self, now: float, data: None, frame: int) -> None:
