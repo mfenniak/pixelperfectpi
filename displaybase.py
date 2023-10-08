@@ -1,35 +1,12 @@
-cpuinfo = open("/proc/cpuinfo").read()
-if "Raspberry Pi" in cpuinfo:
-    EMULATED = False
-else:
-    EMULATED = True
-    print("Emulating RGB matrix...")
-
-import argparse
 import asyncio
-import importlib
 import mqtt
-import pytz
 import sys
-import types
-from typing import Literal, Any
-
-config_obj: object | types.ModuleType = object()
-try:
-    # use import_module to avoid mypy from finding this file only when running local dev
-    config_obj = importlib.import_module("config")
-except ModuleNotFoundError:
-    pass
-
-if EMULATED:
-    from RGBMatrixEmulator import RGBMatrix # type: ignore
-else:
-    from rgbmatrix import RGBMatrix # type: ignore
-from rgbmatrix import RGBMatrixOptions
+from typing import Literal
+from rgbmatrix import RGBMatrix # type: ignore
 from dependency_injector.providers import Provider
 
 
-class SampleBase(object):
+class DisplayBase(object):
     def __init__(self, rgbmatrix_provider: Provider[RGBMatrix]) -> None:
         self.rgbmatrix_provider = rgbmatrix_provider
 

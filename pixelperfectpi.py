@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from samplebase import SampleBase
+from displaybase import DisplayBase
 from rgbmatrix import RGBMatrix, RGBMatrixOptions # type: ignore
 from dependency_injector.providers import Provider
 
@@ -29,7 +29,7 @@ T = TypeVar('T')
 # - anxi - Any errors on Prometheus?
 
 
-class Clock(SampleBase):
+class Clock(DisplayBase):
     def __init__(self, rgbmatrix_provider: Provider[RGBMatrix], data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel) -> None:
         super().__init__(rgbmatrix_provider=rgbmatrix_provider)
         self.data_resolvers = data_resolvers
