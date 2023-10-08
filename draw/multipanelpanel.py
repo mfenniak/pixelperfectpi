@@ -1,6 +1,6 @@
 from .drawpanel import DrawPanel
 from typing import Any
-from . import Box
+from .box import Box
 from data import StaticDataResolver
 
 class MultiPanelPanel(DrawPanel[None]):

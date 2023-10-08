@@ -2,7 +2,7 @@ from PIL import Image, ImageFont, ImageDraw
 import os.path
 from typing import TypeVar, Generic, Literal
 
-from . import Box
+from .box import Box
 from data import DataResolver
 
 T = TypeVar('T')
@@ -11,7 +11,7 @@ class DrawPanel(Generic[T]):
     def __init__(self, box: Box, font_path: str, data_resolver: DataResolver[T]) -> None:
         self.box = box
         self.font_path = font_path
-        self.buffer = Image.new("RGB", (self.w, self.h))
+        self.buffer: Image.Image = Image.new("RGB", (self.w, self.h))
         self.imagedraw = ImageDraw.Draw(self.buffer)
         self.pil_font: None | ImageFont.ImageFont = None
         self.data_resolver = data_resolver

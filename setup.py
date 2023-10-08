@@ -6,11 +6,16 @@ import os
 setup(
     name="pixelperfectpi",
     py_modules=[
+        'component/__init__',
+        'component/time',
         'data/__init__',
+        'data/calendar',
+        'data/envcanada',
         'data/purpleair',
         'data/resolver',
         'di',
         'draw/__init__',
+        'draw/box',
         'draw/drawpanel',
         'draw/multipanelpanel',
         'mqtt',

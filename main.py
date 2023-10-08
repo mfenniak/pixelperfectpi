@@ -16,6 +16,7 @@ if __name__ == "__main__":
     container.config.purpleair.url.from_env("PURPLEAIR_URL", as_=str, default="http://10.156.95.135/json")
     container.config.display_tz.from_env("DISPLAY_TZ", as_=str, default="America/Edmonton")
     container.config.calendar.ical_url.from_env("ICAL_URL", as_=str, required=True)
+    container.config.font_path.from_env("FONT_PATH", as_=str, default="./fonts/")
 
     container.wire(modules=[__name__])
 

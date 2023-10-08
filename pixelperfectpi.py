@@ -21,6 +21,8 @@ from draw import Box
 from draw.drawpanel import DrawPanel
 from draw.multipanelpanel import MultiPanelPanel
 
+from component.time import TimeComponent
+
 
 T = TypeVar('T')
 
@@ -30,21 +32,6 @@ T = TypeVar('T')
 
 
 
-class TimeComponent(DrawPanel[None]):
-    def __init__(self, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
-        self.load_font("7x13")
-
-    def do_draw(self, now: float, data: None, frame: int) -> None:
-        self.fill((0, 0, 0))
-
-        hue = int(now*50 % 360)
-        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-
-        timestr = time.strftime("%-I:%M")
-        if int(now % 2) == 0:
-            timestr = timestr.replace(":", " ")
-        self.draw_text(color, timestr, halign="right")
 
 
 class DayOfWeekComponent(DrawPanel[None]):
@@ -230,11 +217,12 @@ class CalendarComponent(DrawPanel[dict[str, Any]]):
 
 
 class Clock(SampleBase):
-    def __init__(self, purpleair: PurpleAirDataResolver, env_canada: EnvironmentCanadaDataResolver, calendar: CalendarDataResolver) -> None:
+    def __init__(self, purpleair: PurpleAirDataResolver, env_canada: EnvironmentCanadaDataResolver, calendar: CalendarDataResolver, time_component: TimeComponent) -> None:
         super().__init__()
         self.purpleair = purpleair
         self.env_canada = env_canada
         self.calendar = calendar
+        self.time_component = time_component
 
     def pre_run(self) -> None:
         self.data_resolvers = [
@@ -248,7 +236,7 @@ class Clock(SampleBase):
             "font_path": self.font_path,
             "display_tz": self.display_tz,
         }
-        self.time_component = TimeComponent((29, 0, 35, 13), **addt_config)
+        # self.time_component = TimeComponent((29, 0, 35, 13), **addt_config)
         self.curr_component = MultiPanelPanel(
             panel_constructors=[
                 lambda **kwargs: CurrentTemperatureComponent(purpleair=self.purpleair, **kwargs),
