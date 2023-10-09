@@ -124,9 +124,9 @@ class Container(containers.DeclarativeContainer):
         MultiPanelPanel,
         panels=providers.List(
             aqi_component,
-            # calendar_component,
-            # weather_forecast_component,
-            # sun_forecast_component,
+            calendar_component,
+            weather_forecast_component,
+            sun_forecast_component,
             oven_component,
         ),
         box=lower_position,
