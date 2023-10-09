@@ -15,6 +15,12 @@ class OvenInformation:
     status: OvenStatus
     # Might add last time of notice here to allow the component to stop displaying if it's out of date
 
+# FIXME: I think it'd make sense to subscribe to the MQTT alert channel which sends a non-retained
+# event, and then convert it into a separate channel that represents the retained oven state...
+# OR change the mqtt-bridge to be retained... but not sure I want to change that behaviour.
+# The goal would be that if the clock restarts when the oven is on, it should continue to display
+# that state.
+
 class OvenOnDataResolver(DataResolver[OvenInformation], MqttMessageReceiver):
     def __init__(self) -> None:
         self.data = OvenInformation(status=OvenStatus.UNKNOWN)

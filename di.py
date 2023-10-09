@@ -118,14 +118,15 @@ class Container(containers.DeclarativeContainer):
         oven_on=oven_on,
         box=lower_position_inner,
         font_path=config.font_path,
+        icon_path=config.icon_path,
     )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
             aqi_component,
-            calendar_component,
-            weather_forecast_component,
-            sun_forecast_component,
+            # calendar_component,
+            # weather_forecast_component,
+            # sun_forecast_component,
             oven_component,
         ),
         box=lower_position,

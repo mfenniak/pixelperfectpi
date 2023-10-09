@@ -33,6 +33,7 @@ setup(
     ],
     scripts=['main.py'],
     data_files=[
-        ("fonts", [f"fonts/{x}" for x in os.listdir("fonts")])
+        ("fonts", [f"fonts/{x}" for x in os.listdir("fonts")]),
+        ("icons", [f"icons/{x}" for x in os.listdir("icons")]),
     ]
 )

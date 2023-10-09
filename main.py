@@ -27,6 +27,7 @@ if __name__ == "__main__":
     container.config.display_tz.from_env("DISPLAY_TZ", as_=str, default="America/Edmonton")
     container.config.calendar.ical_url.from_env("ICAL_URL", as_=str, required=True)
     container.config.font_path.from_env("FONT_PATH", as_=str, default="./fonts/")
+    container.config.icon_path.from_env("ICON_PATH", as_=str, default="./icons/")
     container.config.mqtt.hostname.from_env("MQTT_HOST")
     container.config.mqtt.port.from_env("MQTT_PORT", as_=int, default=1883)
     container.config.mqtt.username.from_env("MQTT_USERNAME", as_=str)
