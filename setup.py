@@ -17,6 +17,7 @@ setup(
         'data/__init__',
         'data/calendar',
         'data/envcanada',
+        'data/overpower',
         'data/purpleair',
         'data/resolver',
         'di',

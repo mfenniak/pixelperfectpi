@@ -8,6 +8,7 @@ from component.weatherforecast import WeatherForecastComponent
 from data.calendar import CalendarDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
 from data.purpleair import PurpleAirDataResolver
+from data.ovenpower import OvenOnDataResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer
@@ -52,6 +53,8 @@ class Container(containers.DeclarativeContainer):
         ical_url=config.calendar.ical_url,
         display_tz=display_tz,
     )
+
+    oven_on = providers.Singleton(OvenOnDataResolver)
 
     time_component = providers.Singleton(
         TimeComponent,
@@ -165,6 +168,9 @@ class Container(containers.DeclarativeContainer):
         MqttServer,
         config=mqtt_config,
         shutdown_event=shutdown_event,
+        other_receivers=providers.List(
+            oven_on,
+        ),
     )
 
     clock = providers.Singleton(
