@@ -11,12 +11,14 @@ setup(
         'component/calendar',
         'component/currenttemp',
         'component/dayofweek',
+        'component/oven',
         'component/sunforecast',
         'component/time',
         'component/weatherforecast',
         'data/__init__',
         'data/calendar',
         'data/envcanada',
+        'data/overpower',
         'data/purpleair',
         'data/resolver',
         'di',
@@ -31,6 +33,7 @@ setup(
     ],
     scripts=['main.py'],
     data_files=[
-        ("fonts", [f"fonts/{x}" for x in os.listdir("fonts")])
+        ("fonts", [f"fonts/{x}" for x in os.listdir("fonts")]),
+        ("icons", [f"icons/{x}" for x in os.listdir("icons")]),
     ]
 )

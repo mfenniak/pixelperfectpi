@@ -1,4 +1,4 @@
-from aiomqtt import Client
+from aiomqtt import Client, Message
 from dataclasses import dataclass
 from service import Service
 from typing import Any, Literal, TYPE_CHECKING
@@ -23,6 +23,11 @@ class MqttConfig:
     discovery_node_id: str | None
     discovery_object_id: str | None
 
+class MqttMessageReceiver:
+    async def subscribe_to_topics(self, client: Client) -> None:
+        pass
+    async def handle_message(self, message: Message) -> bool:
+        return False
 
 def get_discovery_topic(config: MqttConfig) -> str:
     return f"{config.discovery_prefix}/switch/{config.discovery_node_id}/{config.discovery_object_id}/config"
@@ -54,10 +59,11 @@ def on_runtime_error(e: Exception) -> bool:
     return isinstance(e, RuntimeError)
 
 class MqttServer(Service):
-    def __init__(self, config: MqttConfig, shutdown_event: asyncio.Event):
+    def __init__(self, config: MqttConfig, shutdown_event: asyncio.Event, other_receivers: list[MqttMessageReceiver]):
         self.config = config
         self.shutdown_event = shutdown_event
         self.status_update_queue: asyncio.Queue[str] = asyncio.Queue()
+        self.other_receivers = other_receivers
 
     async def start(self, clock: "DisplayBase") -> None:
         if self.config.hostname is None:
@@ -111,7 +117,10 @@ class MqttServer(Service):
     async def process_messages_forever(self, client: Client, clock: "DisplayBase") -> None:
         async with client.messages() as messages:
             # Subscribe to the topic where we'll receive commands for the switch
-            await client.subscribe(get_cmd_topic(self.config))
+            cmd_topic = get_cmd_topic(self.config)
+            await client.subscribe(cmd_topic)
+            for other_receiver in self.other_receivers:
+                await other_receiver.subscribe_to_topics(client)
 
             # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
             messages_next = asyncio.create_task(anext(messages)) # type: ignore
@@ -123,11 +132,19 @@ class MqttServer(Service):
                 await asyncio.wait(aws, return_when=asyncio.FIRST_COMPLETED)
 
                 if messages_next.done():
-                    cmd = messages_next.result().payload.decode().upper()
-                    if cmd == "ON":
-                        await clock.turn_on()
-                    elif cmd == "OFF":
-                        await clock.turn_off()
+                    message = messages_next.result()
+                    if message.topic == cmd_topic:
+                        cmd = message.payload.decode().upper()
+                        if cmd == "ON":
+                            await clock.turn_on()
+                        elif cmd == "OFF":
+                            await clock.turn_off()
+                    else:
+                        for other_receiver in self.other_receivers:
+                            if await other_receiver.handle_message(message):
+                                break
+                        else:
+                            print("Unknown message", message.topic, message.payload)
                     # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
                     messages_next = asyncio.create_task(anext(messages)) # type: ignore
 
@@ -138,3 +155,8 @@ class MqttServer(Service):
     
     async def status_update(self, state: Literal["ON"] | Literal["OFF"]) -> None:
         await self.status_update_queue.put(state)
+
+# Prometheus alerts...
+# topic: prometheus/alerts/PowerTest
+# FIRING:   {"name":"PowerTest","url":"...","status":"firing","startsAt":"2023-10-09T01:57:52.676Z","endsAt":"0001-01-01T00:00:00Z"}
+# RESOLVED: {"name":"PowerTest","url":"...","status":"resolved","startsAt":"2023-10-09T01:57:52.676Z","endsAt":"2023-10-09T02:01:52.676Z"}

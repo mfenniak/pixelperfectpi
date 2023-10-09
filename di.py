@@ -2,11 +2,13 @@ from component.aqi import AqiComponent
 from component.calendar import CalendarComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
+from component.oven import OvenOnComponent
 from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.weatherforecast import WeatherForecastComponent
 from data.calendar import CalendarDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
+from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
@@ -52,6 +54,8 @@ class Container(containers.DeclarativeContainer):
         ical_url=config.calendar.ical_url,
         display_tz=display_tz,
     )
+
+    oven_on = providers.Singleton(OvenOnDataResolver)
 
     time_component = providers.Singleton(
         TimeComponent,
@@ -109,6 +113,13 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         display_tz=display_tz,
     )
+    oven_component = providers.Singleton(
+        OvenOnComponent,
+        oven_on=oven_on,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
@@ -116,6 +127,7 @@ class Container(containers.DeclarativeContainer):
             calendar_component,
             weather_forecast_component,
             sun_forecast_component,
+            oven_component,
         ),
         box=lower_position,
         font_path=config.font_path,
@@ -165,6 +177,9 @@ class Container(containers.DeclarativeContainer):
         MqttServer,
         config=mqtt_config,
         shutdown_event=shutdown_event,
+        other_receivers=providers.List(
+            oven_on,
+        ),
     )
 
     clock = providers.Singleton(
