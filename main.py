@@ -36,5 +36,5 @@ if __name__ == "__main__":
     container.config.mqtt.discovery.object_id.from_env("MQTT_DISCOVERY_OBJECT_ID", as_=str, default=socket.gethostname())
 
     container.wire(modules=[__name__])
-
     main()
+    container.shutdown_resources()

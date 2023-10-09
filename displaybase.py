@@ -45,9 +45,10 @@ class DisplayBase(object):
             print("Press CTRL-C to stop sample")
             asyncio.run(self.async_run())
         except KeyboardInterrupt:
+            if self.matrix is not None:
+                del self.matrix
             self.shutdown_event.set()
-            print("Exiting\n")
-            sys.exit(0)
+            return
 
     def pre_run(self) -> None:
         raise NotImplemented
