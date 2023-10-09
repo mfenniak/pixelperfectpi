@@ -11,6 +11,7 @@ setup(
         'component/calendar',
         'component/currenttemp',
         'component/dayofweek',
+        'component/oven',
         'component/sunforecast',
         'component/time',
         'component/weatherforecast',

@@ -1,22 +1,23 @@
-from dataclasses import dataclass
 from .resolver import DataResolver
-from enum import Enum, auto
-import json
-from mqtt import MqttMessageReceiver
 from aiomqtt import Client, Message
+from dataclasses import dataclass
+from enum import Enum, auto
+from mqtt import MqttMessageReceiver
+import json
 
-class Status(Enum):
+class OvenStatus(Enum):
     UNKNOWN = auto()
     OFF = auto()
     ON = auto()
 
 @dataclass
-class OvenStatus:
-    status: Status
+class OvenInformation:
+    status: OvenStatus
+    # Might add last time of notice here to allow the component to stop displaying if it's out of date
 
-class OvenOnDataResolver(DataResolver[OvenStatus], MqttMessageReceiver):
+class OvenOnDataResolver(DataResolver[OvenInformation], MqttMessageReceiver):
     def __init__(self) -> None:
-        self.data = OvenStatus(status=Status.UNKNOWN)
+        self.data = OvenInformation(status=OvenStatus.UNKNOWN)
         self.topic = "prometheus/alerts/OvenPoweredOn"
 
     async def maybe_refresh(self, now: float) -> None:
@@ -33,8 +34,7 @@ class OvenOnDataResolver(DataResolver[OvenStatus], MqttMessageReceiver):
         payload = json.loads(message.payload)
         alert_status = payload.get("status")
         if alert_status == "firing":
-            self.data = OvenStatus(status=Status.ON)
+            self.data = OvenInformation(status=OvenStatus.ON)
         else:
-            self.data = OvenStatus(status=Status.OFF)
-        print("Received over power status update", self.data)
+            self.data = OvenInformation(status=OvenStatus.OFF)
         return True
