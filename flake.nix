@@ -21,6 +21,7 @@
         pythonPackages = (pythonInterpreter: (ps:
           [
             (mfenniak.packages.${system}.python-librgbmatrix pythonInterpreter)
+            # FIXME: not all these dependencies are needed for the package; some could be split into devShell only
             ps.aiohttp
             ps.aiomqtt
             ps.backoff
@@ -29,6 +30,8 @@
             ps.lxml
             ps.mypy
             ps.pylint
+            ps.pytest
+            ps.pytest-asyncio
             ps.pytz
             ps.recurring-ical-events
             ps.types-pillow
