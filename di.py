@@ -2,11 +2,13 @@ from component.aqi import AqiComponent
 from component.calendar import CalendarComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
+from component.distance import DistanceComponent
 from component.oven import OvenOnComponent
 from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.weatherforecast import WeatherForecastComponent
 from data.calendar import CalendarDataResolver
+from data.distance import DistanceDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
@@ -56,6 +58,13 @@ class Container(containers.DeclarativeContainer):
     )
 
     oven_on = providers.Singleton(OvenOnDataResolver)
+
+    distance_to_mathieu = providers.Singleton(
+        DistanceDataResolver,
+        home_lat=51.036476342750326,
+        home_long=-114.1045886332063,
+        topic="homeassistant/output/location/mathieu",
+    )
 
     time_component = providers.Singleton(
         TimeComponent,
@@ -120,6 +129,14 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
+    distance_to_mathieu_component = providers.Singleton(
+        DistanceComponent,
+        distance=distance_to_mathieu,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        label="Mathieu",
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
@@ -128,6 +145,7 @@ class Container(containers.DeclarativeContainer):
             weather_forecast_component,
             sun_forecast_component,
             oven_component,
+            distance_to_mathieu_component,
         ),
         box=lower_position,
         font_path=config.font_path,
@@ -179,6 +197,7 @@ class Container(containers.DeclarativeContainer):
         shutdown_event=shutdown_event,
         other_receivers=providers.List(
             oven_on,
+            distance_to_mathieu,
         ),
     )
 
