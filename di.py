@@ -65,6 +65,12 @@ class Container(containers.DeclarativeContainer):
         home_long=-114.1045886332063,
         topic="homeassistant/output/location/mathieu",
     )
+    distance_to_amanda = providers.Singleton(
+        DistanceDataResolver,
+        home_lat=51.036476342750326,
+        home_long=-114.1045886332063,
+        topic="homeassistant/output/location/amanda",
+    )
 
     time_component = providers.Singleton(
         TimeComponent,
@@ -137,6 +143,14 @@ class Container(containers.DeclarativeContainer):
         icon_path=config.icon_path,
         label="Mathieu",
     )
+    distance_to_amanda_component = providers.Singleton(
+        DistanceComponent,
+        distance=distance_to_amanda,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        label="Amanda",
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
@@ -146,6 +160,7 @@ class Container(containers.DeclarativeContainer):
             sun_forecast_component,
             oven_component,
             distance_to_mathieu_component,
+            distance_to_amanda_component,
         ),
         box=lower_position,
         font_path=config.font_path,
