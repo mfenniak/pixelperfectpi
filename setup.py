@@ -19,6 +19,7 @@ setup(
         'data/__init__',
         'data/calendar',
         'data/distance',
+        'data/door',
         'data/envcanada',
         'data/ovenpower',
         'data/purpleair',
