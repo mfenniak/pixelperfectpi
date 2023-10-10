@@ -12,6 +12,7 @@ from data.distance import DistanceDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
+from data.door import DoorDataResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer
@@ -71,6 +72,22 @@ class Container(containers.DeclarativeContainer):
         home_long=-114.1045886332063,
         topic="homeassistant/output/location/amanda",
     )
+    garage_door_status = providers.Singleton(
+        DoorDataResolver,
+        topic="homeassistant/output/door/garage_door",
+    )
+    garage_man_door_status = providers.Singleton(
+        DoorDataResolver,
+        topic="homeassistant/output/door/garage_man_door",
+    )
+    back_door_status = providers.Singleton(
+        DoorDataResolver,
+        topic="homeassistant/output/door/back_door",
+    )
+
+    # homeassistant/output/door/garage_door { "timestamp": "2023-10-10 13:52:55.702056-06:00", "state": "closed" }
+    # homeassistant/output/door/garage_man_door { "timestamp": "2023-10-10 13:53:07.571062-06:00", "state": "closed" }
+    # homeassistant/output/door/back_door { "timestamp": "2023-10-10 13:54:19.102155-06:00", "state": "closed" }
 
     time_component = providers.Singleton(
         TimeComponent,
@@ -216,6 +233,9 @@ class Container(containers.DeclarativeContainer):
             oven_on,
             distance_to_mathieu,
             distance_to_amanda,
+            garage_door_status,
+            garage_man_door_status,
+            back_door_status,
         ),
     )
 
