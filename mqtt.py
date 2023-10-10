@@ -133,7 +133,7 @@ class MqttServer(Service):
 
                 if messages_next.done():
                     message = messages_next.result()
-                    if message.topic == cmd_topic:
+                    if str(message.topic) == cmd_topic:
                         cmd = message.payload.decode().upper()
                         if cmd == "ON":
                             await clock.turn_on()
