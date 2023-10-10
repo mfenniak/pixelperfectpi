@@ -7,10 +7,10 @@ import os.path
 from PIL import Image
 
 class DistanceComponent(DrawPanel[LocationDistance]):
-    def __init__(self, distance: DistanceDataResolver, box: Box, font_path: str, icon_path: str, label: str) -> None:
+    def __init__(self, distance: DistanceDataResolver, box: Box, font_path: str, icon_path: str, label: str, icon: str) -> None:
         super().__init__(data_resolver=distance, box=box, font_path=font_path)
         self.load_font("5x8")
-        self.icon = Image.open(os.path.join(icon_path, "runner.png"))
+        self.icon = Image.open(os.path.join(icon_path, f"{icon}.png"))
         self.label = label
 
     def frame_count(self, data: LocationDistance | None) -> int:

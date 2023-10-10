@@ -142,6 +142,7 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         icon_path=config.icon_path,
         label="Mathieu",
+        icon="runner",
     )
     distance_to_amanda_component = providers.Singleton(
         DistanceComponent,
@@ -150,6 +151,7 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         icon_path=config.icon_path,
         label="Amanda",
+        icon="cyclist",
     )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
@@ -213,6 +215,7 @@ class Container(containers.DeclarativeContainer):
         other_receivers=providers.List(
             oven_on,
             distance_to_mathieu,
+            distance_to_amanda,
         ),
     )
 
