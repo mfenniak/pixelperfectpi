@@ -7,6 +7,7 @@ from component.oven import OvenOnComponent
 from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.weatherforecast import WeatherForecastComponent
+from component.door import DoorComponent
 from data.calendar import CalendarDataResolver
 from data.distance import DistanceDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
@@ -170,16 +171,43 @@ class Container(containers.DeclarativeContainer):
         label="Amanda",
         icon="cyclist",
     )
+    garage_door_component = providers.Singleton(
+        DoorComponent,
+        door=garage_door_status,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        name="Garage Door",
+    )
+    garage_man_door_component = providers.Singleton(
+        DoorComponent,
+        door=garage_man_door_status,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        name="Man Door",
+    )
+    back_door_component = providers.Singleton(
+        DoorComponent,
+        door=back_door_status,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        name="Back Door",
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
             aqi_component,
-            calendar_component,
-            weather_forecast_component,
-            sun_forecast_component,
-            oven_component,
-            distance_to_mathieu_component,
-            distance_to_amanda_component,
+            # calendar_component,
+            # weather_forecast_component,
+            # sun_forecast_component,
+            # oven_component,
+            # distance_to_mathieu_component,
+            # distance_to_amanda_component,
+            garage_door_component,
+            garage_man_door_component,
+            back_door_component,
         ),
         box=lower_position,
         font_path=config.font_path,

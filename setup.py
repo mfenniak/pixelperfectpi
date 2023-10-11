@@ -12,6 +12,7 @@ setup(
         'component/currenttemp',
         'component/dayofweek',
         'component/distance',
+        'component/door',
         'component/oven',
         'component/sunforecast',
         'component/time',
