@@ -44,7 +44,7 @@ class CalendarDataResolver(ScheduledDataResolver[dict[str, Any]]): # FIXME: chan
             else:
                 print("unexpected dt type", repr(dtstart))
 
-        future_cutoff = now + datetime.timedelta(days=7)
+        future_cutoff = now + datetime.timedelta(days=6)
         near_future_events = [x for x in future_events if x[0] < future_cutoff]
         near_future_events = sorted(near_future_events, key=lambda event: event[0])
 
