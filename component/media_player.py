@@ -22,7 +22,7 @@ class MediaPlayerComponent(DrawPanel[MediaPlayerInformation]):
         return 1
 
     def do_draw(self, now: float, data: MediaPlayerInformation | None, frame: int) -> None:
-        self.fill((44, 85, 69))
+        self.fill((21, 40, 33))
 
         if data is None:
             return
