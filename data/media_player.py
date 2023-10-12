@@ -97,9 +97,12 @@ class MediaPlayerDataResolver(DataResolver[MediaPlayerInformation], MqttMessageR
                 media_player_state = MediaPlayerState.OFF
             case _:
                 media_player_state = MediaPlayerState.UNKNOWN
+        updated_at = payload.get("updated_at")
+        if updated_at is not None and updated_at != "":
+            updated_at_dt = datetime.datetime.strptime(updated_at, '%Y-%m-%d %H:%M:%S.%f%z')
         self.data = MediaPlayerInformation(
             state=media_player_state,
-            updated_at=datetime.datetime.strptime(payload.get("updated_at"), '%Y-%m-%d %H:%M:%S.%f%z'),
+            updated_at=updated_at_dt,
             media_position=payload.get("position"),
             media_duration=payload.get("duration"),
         )
