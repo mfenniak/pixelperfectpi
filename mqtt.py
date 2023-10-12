@@ -152,7 +152,7 @@ class MqttServer(Service):
                     status = status_update.result()
                     await client.publish(get_state_topic(self.config), status, qos=1, retain=True)
                     status_update = asyncio.create_task(self.status_update_queue.get())
-    
+
     async def status_update(self, state: Literal["ON"] | Literal["OFF"]) -> None:
         await self.status_update_queue.put(state)
 

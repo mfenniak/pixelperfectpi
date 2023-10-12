@@ -11,13 +11,13 @@ def main(clock: Clock = Provide[Container.clock]) -> None:
 
 # Main function
 if __name__ == "__main__":
-    cpuinfo = open("/proc/cpuinfo").read()
+    with open("/proc/cpuinfo") as f:
+        cpuinfo = f.read()
     if "Raspberry Pi" in cpuinfo:
         DEFAULT_EMULATED = "real"
     else:
         DEFAULT_EMULATED = "emulated"
 
-    from di import Container
     container = Container()
 
     container.config.mode.from_env("EMULATED", as_=str, default=DEFAULT_EMULATED)

@@ -1,11 +1,11 @@
-from .drawpanel import DrawPanel
-from typing import Any
 from .box import Box
+from .drawpanel import DrawPanel
 from data import StaticDataResolver
+from typing import Any
 from typing import List
 
 class MultiPanelPanel(DrawPanel[None]):
-    def __init__(self, box: Box, font_path: str, panels: List[DrawPanel[Any]] | None = None, time_per_frame: int = 5, **kwargs: Any) -> None:
+    def __init__(self, box: Box, font_path: str, panels: List[DrawPanel[Any]] | None = None, time_per_frame: int = 5) -> None:
         super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
         assert panels is not None
         self.panels = panels

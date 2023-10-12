@@ -1,9 +1,8 @@
-from PIL import Image, ImageFont, ImageDraw
-import os.path
-from typing import TypeVar, Generic, Literal
-
 from .box import Box
 from data import DataResolver
+from PIL import Image, ImageFont, ImageDraw
+from typing import TypeVar, Generic, Literal
+import os.path
 
 T = TypeVar('T')
 
@@ -28,7 +27,7 @@ class DrawPanel(Generic[T]):
         return 1
 
     def do_draw(self, now: float, data: T | None, frame: int) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def draw(self, parent_buffer: Image.Image, now: float, data: T | None, frame: int) -> None:
         self.do_draw(now, data, frame)

@@ -34,7 +34,7 @@ class ScheduledDataResolver(DataResolver[T]):
                 pass
 
     async def do_collection(self) -> None | T:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def refresh(self) -> None:
         try:

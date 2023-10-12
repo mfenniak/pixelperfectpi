@@ -17,7 +17,7 @@ class DisplayBase(object):
         self.matrix: RGBMatrix | None = None
 
     async def run(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def turn_on(self) -> None:
         if self.state == "ON":
@@ -51,16 +51,16 @@ class DisplayBase(object):
             return
 
     def pre_run(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def update_data(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def create_canvas(self, matrix: RGBMatrix) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def draw_frame(self, matrix: RGBMatrix) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     async def async_run(self) -> None:
         for service in self.services:
