@@ -3,17 +3,19 @@ from component.calendar import CalendarComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 from component.distance import DistanceComponent
+from component.door import DoorComponent
+from component.media_player import MediaPlayerComponent
 from component.oven import OvenOnComponent
 from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.weatherforecast import WeatherForecastComponent
-from component.door import DoorComponent
 from data.calendar import CalendarDataResolver
 from data.distance import DistanceDataResolver
+from data.door import DoorDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
+from data.media_player import MediaPlayerDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
-from data.door import DoorDataResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer
@@ -84,6 +86,10 @@ class Container(containers.DeclarativeContainer):
     back_door_status = providers.Singleton(
         DoorDataResolver,
         topic="homeassistant/output/door/back_door",
+    )
+    family_room_tv_status = providers.Singleton(
+        MediaPlayerDataResolver,
+        topic="homeassistant/output/media/family_room_tv",
     )
 
     # homeassistant/output/door/garage_door { "timestamp": "2023-10-10 13:52:55.702056-06:00", "state": "closed" }
@@ -195,6 +201,13 @@ class Container(containers.DeclarativeContainer):
         icon_path=config.icon_path,
         name="Back Door",
     )
+    family_room_tv_status_component = providers.Singleton(
+        MediaPlayerComponent,
+        media_player=family_room_tv_status,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
@@ -208,6 +221,7 @@ class Container(containers.DeclarativeContainer):
             garage_door_component,
             garage_man_door_component,
             back_door_component,
+            family_room_tv_status_component,
         ),
         box=lower_position,
         font_path=config.font_path,
@@ -264,6 +278,7 @@ class Container(containers.DeclarativeContainer):
             garage_door_status,
             garage_man_door_status,
             back_door_status,
+            family_room_tv_status,
         ),
     )
 
