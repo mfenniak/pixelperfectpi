@@ -35,6 +35,7 @@ if __name__ == "__main__":
     container.config.mqtt.discovery.prefix.from_env("MQTT_DISCOVERY_PREFIX", as_=str, default="homeassistant")
     container.config.mqtt.discovery.node_id.from_env("MQTT_DISCOVERY_NODE_ID", as_=str, default="pixelperfectpi")
     container.config.mqtt.discovery.object_id.from_env("MQTT_DISCOVERY_OBJECT_ID", as_=str, default=socket.gethostname())
+    container.config.homeassistant.media_mqtt_topic.from_env("HA_MEDIA_MQTT_TOPIC")
 
     container.wire(modules=[__name__])
     main()

@@ -87,14 +87,10 @@ class Container(containers.DeclarativeContainer):
         DoorDataResolver,
         topic="homeassistant/output/door/back_door",
     )
-    family_room_tv_status = providers.Singleton(
+    media_player_status = providers.Singleton(
         MediaPlayerDataResolver,
-        topic="homeassistant/output/media/family_room_tv",
+        topic=config.homeassistant.media_mqtt_topic, # str | None
     )
-
-    # homeassistant/output/door/garage_door { "timestamp": "2023-10-10 13:52:55.702056-06:00", "state": "closed" }
-    # homeassistant/output/door/garage_man_door { "timestamp": "2023-10-10 13:53:07.571062-06:00", "state": "closed" }
-    # homeassistant/output/door/back_door { "timestamp": "2023-10-10 13:54:19.102155-06:00", "state": "closed" }
 
     time_component = providers.Singleton(
         TimeComponent,
@@ -201,9 +197,9 @@ class Container(containers.DeclarativeContainer):
         icon_path=config.icon_path,
         name="Back Door",
     )
-    family_room_tv_status_component = providers.Singleton(
+    media_player_status_component = providers.Singleton(
         MediaPlayerComponent,
-        media_player=family_room_tv_status,
+        media_player=media_player_status,
         box=lower_position_inner,
         font_path=config.font_path,
         icon_path=config.icon_path,
@@ -221,7 +217,7 @@ class Container(containers.DeclarativeContainer):
             garage_door_component,
             garage_man_door_component,
             back_door_component,
-            family_room_tv_status_component,
+            media_player_status_component,
         ),
         box=lower_position,
         font_path=config.font_path,
@@ -278,7 +274,7 @@ class Container(containers.DeclarativeContainer):
             garage_door_status,
             garage_man_door_status,
             back_door_status,
-            family_room_tv_status,
+            media_player_status,
         ),
     )
 

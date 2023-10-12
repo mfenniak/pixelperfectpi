@@ -69,7 +69,7 @@ class MediaPlayerInformation:
 
 
 class MediaPlayerDataResolver(DataResolver[MediaPlayerInformation], MqttMessageReceiver):
-    def __init__(self, topic: str) -> None:
+    def __init__(self, topic: str | None) -> None:
         self.data = MediaPlayerInformation(state=MediaPlayerState.UNKNOWN, updated_at=None, media_position=None, media_duration=None)
         self.topic = topic
 
@@ -77,7 +77,8 @@ class MediaPlayerDataResolver(DataResolver[MediaPlayerInformation], MqttMessageR
         return
 
     async def subscribe_to_topics(self, client: Client) -> None:
-        await client.subscribe(self.topic)
+        if self.topic is not None:
+            await client.subscribe(self.topic)
 
     async def handle_message(self, message: Message) -> bool:
         if str(message.topic) != self.topic:
