@@ -54,6 +54,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             (pkgs.${python}.withPackages (pythonPackages pkgs.${python}))
+            pkgs.mosquitto # for mosquitto_sub & mosquitto_pub test cmds
           ];
         };
       });
