@@ -23,7 +23,7 @@ mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
 mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
     -t "homeassistant/output/media/family_room_tv" \
     --retain \
-    -m "{ \"state\": \"playing\", \"position\": 60, \"duration\": 1712, \"updated_at\": \"$(date +"%Y-%m-%d %H:%M:%S.%N%:z")\" }"
+    -m "{ \"state\": \"playing\", \"position\": 60, \"duration\": 1712, \"updated_at\": \"$(date +"%Y-%m-%d %H:%M:%S.%6N%:z")\" }"
 ```
 
 # Send test location
@@ -41,5 +41,12 @@ mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
 mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
     -t "homeassistant/output/door/garage_door" \
     --retain \
-    -m "{ \"timestamp\": \"$(date +"%Y-%m-%d %H:%M:%S.%N%:z")\", \"state\": \"open\" }"
+    -m "{ \"timestamp\": \"$(date +"%Y-%m-%d %H:%M:%S.%6N%:z")\", \"state\": \"open\" }"
+```
+
+```
+mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
+    -t "homeassistant/output/door/garage_door" \
+    --retain \
+    -m "{ \"timestamp\": \"$(date +"%Y-%m-%d %H:%M:%S.%6N%:z")\", \"state\": \"closed\" }"
 ```
