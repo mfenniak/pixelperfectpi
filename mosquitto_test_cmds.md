@@ -59,3 +59,30 @@ mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
     --retain \
     -m "{ \"timestamp\": \"2020-01-01 01:01:01.000-00:00\", \"state\": \"open\" }"
 ```
+
+# Timers
+
+Idle:
+
+```
+mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
+    -t "homeassistant/output/timer/kitchen" \
+    --retain \
+    -m "{ \"state\": \"idle\", \"duration\": \"0:18:00\", \"finishes_at\": \"\", \"remaining\": \"\" }"
+```
+
+Running:
+```
+mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
+    -t "homeassistant/output/timer/kitchen" \
+    --retain \
+    -m "{ \"state\": \"active\", \"duration\": \"0:18:00\", \"finishes_at\": \"$(date -d "now + 5 minutes" +"%Y-%m-%dT%H:%M:%S%:z")\", \"remaining\": \"0:18:00\" }"
+```
+
+Paused:
+```
+mosquitto_pub -h $MQTT_HOST -u $MQTT_USERNAME -P $MQTT_PASSWORD \
+    -t "homeassistant/output/timer/kitchen" \
+    --retain \
+    -m "{ \"state\": \"paused\", \"duration\": \"0:18:00\", \"finishes_at\": \"\", \"remaining\": \"0:05:00\" }"
+```

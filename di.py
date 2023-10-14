@@ -8,6 +8,7 @@ from component.media_player import MediaPlayerComponent
 from component.oven import OvenOnComponent
 from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
+from component.timer import TimerComponent
 from component.weatherforecast import WeatherForecastComponent
 from data.calendar import CalendarDataResolver
 from data.distance import DistanceDataResolver
@@ -16,6 +17,7 @@ from data.envcanada import EnvironmentCanadaDataResolver
 from data.media_player import MediaPlayerDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
+from data.timer import TimerDataResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer
@@ -90,6 +92,10 @@ class Container(containers.DeclarativeContainer):
     media_player_status = providers.Singleton(
         MediaPlayerDataResolver,
         topic=config.homeassistant.media_mqtt_topic, # str | None
+    )
+    timer_status = providers.Singleton(
+        TimerDataResolver,
+        topic="homeassistant/output/timer/kitchen",
     )
 
     time_component = providers.Singleton(
@@ -204,6 +210,13 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
+    timer_component = providers.Singleton(
+        TimerComponent,
+        timer=timer_status,
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
@@ -218,6 +231,7 @@ class Container(containers.DeclarativeContainer):
             garage_man_door_component,
             back_door_component,
             media_player_status_component,
+            timer_component,
         ),
         box=lower_position,
         font_path=config.font_path,
@@ -275,6 +289,7 @@ class Container(containers.DeclarativeContainer):
             garage_man_door_status,
             back_door_status,
             media_player_status,
+            timer_status,
         ),
     )
 

@@ -6,6 +6,7 @@ from .media_player import MediaPlayerDataResolver, MediaPlayerInformation, Media
 from .ovenpower import OvenOnDataResolver, OvenInformation, OvenStatus
 from .purpleair import PurpleAirDataResolver
 from .resolver import DataResolver, StaticDataResolver
+from .timer import TimerDataResolver, TimerInformation, TimerState
 
 __all__ = [
     'CalendarDataResolver',
@@ -24,4 +25,7 @@ __all__ = [
     'OvenStatus',
     'PurpleAirDataResolver',
     'StaticDataResolver',
+    "TimerDataResolver",
+    "TimerInformation",
+    "TimerState",
 ]
