@@ -179,7 +179,7 @@ class Container(containers.DeclarativeContainer):
         box=lower_position_inner,
         font_path=config.font_path,
         icon_path=config.icon_path,
-        name="Garage Door",
+        name="Garage",
     )
     garage_man_door_component = providers.Singleton(
         DoorComponent,

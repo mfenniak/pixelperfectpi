@@ -1,5 +1,10 @@
-from .drawpanel import DrawPanel
-from .multipanelpanel import MultiPanelPanel
 from .box import Box
+from .drawpanel import DrawPanel
+from .multipanelpanel import MultiPanelPanel, PrioritizedPanel
 
-__all__ = [ 'DrawPanel', 'MultiPanelPanel', 'Box' ]
+__all__ = [
+    'Box',
+    'DrawPanel',
+    'MultiPanelPanel',
+    'PrioritizedPanel',
+]
