@@ -16,7 +16,7 @@ class DistanceComponent(DrawPanel[LocationDistance]):
     def frame_count(self, data: LocationDistance | None) -> int:
         if data is None:
             return 0
-        if data.distance < 1:
+        if data.distance < 0.25:
             return 0
         return 1
 
