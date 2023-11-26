@@ -77,7 +77,7 @@ class MqttServer(Service):
             except Exception as e:
                 print("Exception starting up connect_and_listen_mqtt", e)
 
-    @backoff.on_exception(backoff.expo, Exception, giveup=on_runtime_error, raise_on_giveup=False)  # Catch all exceptions
+    @backoff.on_exception(backoff.expo, Exception, giveup=on_runtime_error, raise_on_giveup=False, max_time=300)  # Catch all exceptions
     async def connect_and_listen_mqtt(self, clock: "DisplayBase") -> None:
         assert self.config.hostname is not None
         client = Client(
