@@ -222,7 +222,7 @@ class Container(containers.DeclarativeContainer):
     paris_component = providers.Singleton(
         CountdownComponent,
         display_tz=display_tz,
-        target_date=datetime.datetime(2024, 6, 28, 19, 40, 0, tzinfo=pytz.timezone("America/Edmonton")),
+        target_date=pytz.timezone("America/Edmonton").localize(datetime.datetime(2024, 6, 28, 19, 40, 0)),
         box=lower_position_inner,
         font_path=config.font_path,
         icon_path=config.icon_path,
