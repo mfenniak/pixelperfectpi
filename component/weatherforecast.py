@@ -7,7 +7,7 @@ class WeatherForecastComponent(DrawPanel[dict[str, Any]]):
         super().__init__(data_resolver=env_canada, box=box, font_path=font_path)
         self.load_font("4x6")
 
-    def frame_count(self, data: dict[str, Any] | None) -> int:
+    def frame_count(self, data: dict[str, Any] | None, now: float) -> int:
         if data == None:
             return 0
         else:

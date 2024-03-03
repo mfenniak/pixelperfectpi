@@ -13,7 +13,7 @@ class DistanceComponent(DrawPanel[LocationDistance]):
         self.icon = Image.open(os.path.join(icon_path, f"{icon}.png"))
         self.label = label
 
-    def frame_count(self, data: LocationDistance | None) -> int:
+    def frame_count(self, data: LocationDistance | None, now: float) -> int:
         if data is None:
             return 0
         if data.distance < 0.25:

@@ -1,5 +1,6 @@
 from component.aqi import AqiComponent
 from component.calendar import CalendarComponent
+from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 from component.distance import DistanceComponent
@@ -23,6 +24,7 @@ from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer
 from pixelperfectpi import Clock
 import asyncio
+import datetime
 import pytz
 import rgbmatrix # type: ignore
 try:
@@ -217,21 +219,30 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
+    paris_component = providers.Singleton(
+        CountdownComponent,
+        display_tz=display_tz,
+        target_date=datetime.datetime(2024, 6, 28, 19, 40, 0, tzinfo=pytz.timezone("America/Edmonton")),
+        box=lower_position_inner,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
-            aqi_component,
-            calendar_component,
-            weather_forecast_component,
-            sun_forecast_component,
-            oven_component,
-            distance_to_mathieu_component,
-            distance_to_amanda_component,
-            garage_door_component,
-            garage_man_door_component,
-            back_door_component,
-            media_player_status_component,
-            timer_component,
+            # aqi_component,
+            # calendar_component,
+            # weather_forecast_component,
+            # sun_forecast_component,
+            # oven_component,
+            # distance_to_mathieu_component,
+            # distance_to_amanda_component,
+            # garage_door_component,
+            # garage_man_door_component,
+            # back_door_component,
+            # media_player_status_component,
+            # timer_component,
+            paris_component,
         ),
         box=lower_position,
         font_path=config.font_path,

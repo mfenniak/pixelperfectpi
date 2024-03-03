@@ -10,7 +10,7 @@ class CurrentTemperatureComponent(DrawPanel[dict[str, Any]]):
         super().__init__(data_resolver=purpleair, box=box, font_path=font_path)
         self.load_font("7x13")
 
-    def frame_count(self, data: dict[str, Any] | None) -> int:
+    def frame_count(self, data: dict[str, Any] | None, now: float) -> int:
         if data is None:
             return 0
         else:

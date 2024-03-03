@@ -27,7 +27,7 @@ class DoorComponent(DrawPanel[DoorInformation], PrioritizedPanel[DoorInformation
             return 10
         return 0
 
-    def frame_count(self, data: DoorInformation | None) -> int:
+    def frame_count(self, data: DoorInformation | None, now: float) -> int:
         if data is None or data.status == DoorStatus.UNKNOWN:
             return 0
         now_dt = datetime.datetime.now(pytz.utc)

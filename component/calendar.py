@@ -11,7 +11,7 @@ class CalendarComponent(DrawPanel[dict[str, Any]]):
         self.display_tz = display_tz
         self.load_font("4x6")
 
-    def frame_count(self, data: dict[str, Any] | None) -> int:
+    def frame_count(self, data: dict[str, Any] | None, now: float) -> int:
         if data is None:
             return 0
         return min(len(data["future_events"]), 3) # no more than this many events

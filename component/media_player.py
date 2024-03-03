@@ -12,7 +12,7 @@ class MediaPlayerComponent(DrawPanel[MediaPlayerInformation]):
         self.load_font("5x8")
         self.icon = Image.open(os.path.join(icon_path, "tv.png"))
 
-    def frame_count(self, data: MediaPlayerInformation | None) -> int:
+    def frame_count(self, data: MediaPlayerInformation | None, now: float) -> int:
         if data is None:
             return 0
         if data.state not in (MediaPlayerState.PLAYING, MediaPlayerState.IDLE):

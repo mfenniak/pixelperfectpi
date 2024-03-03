@@ -23,7 +23,7 @@ class DrawPanel(Generic[T]):
     def load_font(self, name: str) -> None:
         self.pil_font = ImageFont.load(os.path.join(self.font_path, f"{name}.pil"))
 
-    def frame_count(self, data: T | None) -> int:
+    def frame_count(self, data: T | None, now: float) -> int:
         return 1
 
     def do_draw(self, now: float, data: T | None, frame: int) -> None:

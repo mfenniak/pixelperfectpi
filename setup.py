@@ -9,6 +9,7 @@ setup(
         'component/__init__',
         'component/aqi',
         'component/calendar',
+        'component/countdown',
         'component/currenttemp',
         'component/dayofweek',
         'component/distance',

@@ -10,7 +10,7 @@ class SunForecastComponent(DrawPanel[dict[str, Any]]):
         self.display_tz = display_tz
         self.load_font("5x8")
 
-    def frame_count(self, data: dict[str, Any] | None) -> int:
+    def frame_count(self, data: dict[str, Any] | None, now: float) -> int:
         if data == None:
             return 0
         else:

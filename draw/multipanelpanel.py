@@ -44,7 +44,7 @@ class MultiPanelPanel(DrawPanel[None]):
         panel_datas = panel_data_by_priority[highest_priority]
 
         # Ask each panel how many frames they will have, considering their data.
-        frame_count: list[int] = [x.frame_count(data=panel_datas[i]) for i, x in enumerate(panels)]
+        frame_count: list[int] = [x.frame_count(data=panel_datas[i], now=now) for i, x in enumerate(panels)]
 
         # Based upon the total number of frames on all panels, and the time, calculate the active frame.
         total_frames = sum(frame_count)

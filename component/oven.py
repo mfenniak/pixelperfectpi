@@ -12,7 +12,7 @@ class OvenOnComponent(DrawPanel[OvenInformation]):
         self.load_font("5x8")
         self.icon = Image.open(os.path.join(icon_path, "oven-on.png"))
 
-    def frame_count(self, data: OvenInformation | None) -> int:
+    def frame_count(self, data: OvenInformation | None, now: float) -> int:
         if data is None:
             return 0
         if data.status != OvenStatus.ON:

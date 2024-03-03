@@ -12,7 +12,7 @@ class TimerComponent(DrawPanel[TimerInformation]):
         self.load_font("5x8")
         self.icon = Image.open(os.path.join(icon_path, "timer.png"))
 
-    def frame_count(self, data: TimerInformation | None) -> int:
+    def frame_count(self, data: TimerInformation | None, now: float) -> int:
         if data is None:
             return 0
         if data.state not in (TimerState.RUNNING, TimerState.PAUSED):
