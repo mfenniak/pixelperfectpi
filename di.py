@@ -69,14 +69,14 @@ class Container(containers.DeclarativeContainer):
 
     distance_to_mathieu = providers.Singleton(
         DistanceDataResolver,
-        home_lat=51.036476342750326,
-        home_long=-114.1045886332063,
+        home_lat=config.location.latitude,
+        home_long=config.location.longitude,
         topic="homeassistant/output/location/mathieu",
     )
     distance_to_amanda = providers.Singleton(
         DistanceDataResolver,
-        home_lat=51.036476342750326,
-        home_long=-114.1045886332063,
+        home_lat=config.location.latitude,
+        home_long=config.location.longitude,
         topic="homeassistant/output/location/amanda",
     )
     garage_door_status = providers.Singleton(

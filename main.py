@@ -36,6 +36,8 @@ if __name__ == "__main__":
     container.config.mqtt.discovery.node_id.from_env("MQTT_DISCOVERY_NODE_ID", as_=str, default="pixelperfectpi")
     container.config.mqtt.discovery.object_id.from_env("MQTT_DISCOVERY_OBJECT_ID", as_=str, default=socket.gethostname())
     container.config.homeassistant.media_mqtt_topic.from_env("HA_MEDIA_MQTT_TOPIC")
+    container.config.location.latitude.from_env("LATITUDE", as_=float, default=51.036476342750326)
+    container.config.location.longitude.from_env("LONGITUDE", as_=float, default=-114.1045886332063)
 
     container.wire(modules=[__name__])
     main()
