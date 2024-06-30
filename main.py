@@ -38,6 +38,7 @@ if __name__ == "__main__":
     container.config.homeassistant.media_mqtt_topic.from_env("HA_MEDIA_MQTT_TOPIC")
     container.config.location.latitude.from_env("LATITUDE", as_=float, default=51.036476342750326)
     container.config.location.longitude.from_env("LONGITUDE", as_=float, default=-114.1045886332063)
+    container.config.weather.mqtt_topic.from_env("WEATHER_MQTT_TOPIC", as_=str, default="homeassistant/output/weather/Calgary")
 
     container.wire(modules=[__name__])
     main()

@@ -7,9 +7,13 @@ from .ovenpower import OvenOnDataResolver, OvenInformation, OvenStatus
 from .purpleair import PurpleAirDataResolver
 from .resolver import DataResolver, StaticDataResolver
 from .timer import TimerDataResolver, TimerInformation, TimerState
+from .weather import CurrentWeatherData, WeatherForecasts, WeatherForecast, SunForecast
+from .weather_mqtt import CurrentWeatherDataMqttResolver
 
 __all__ = [
     'CalendarDataResolver',
+    'CurrentWeatherData',
+    'CurrentWeatherDataMqttResolver',
     'DataResolver',
     'DistanceDataResolver',
     'DoorDataResolver',
@@ -25,7 +29,10 @@ __all__ = [
     'OvenStatus',
     'PurpleAirDataResolver',
     'StaticDataResolver',
-    "TimerDataResolver",
-    "TimerInformation",
-    "TimerState",
+    'SunForecast',
+    'TimerDataResolver',
+    'TimerInformation',
+    'TimerState',
+    'WeatherForecast',
+    'WeatherForecasts',
 ]

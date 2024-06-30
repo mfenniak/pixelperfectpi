@@ -1,0 +1,42 @@
+alias: "MQTT Publish: Send Suresnes weather to pixelperfectpi"
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - weather.suresnes
+    attribute: temperature
+condition: []
+action:
+  - service: weather.get_forecasts
+    data:
+      type: daily
+    target:
+      entity_id: weather.suresnes
+    response_variable: daily
+  - service: weather.get_forecasts
+    data:
+      type: hourly
+    target:
+      entity_id: weather.suresnes
+    response_variable: hourly
+  - service: mqtt.publish
+    data:
+      qos: "1"
+      retain: true
+      topic: homeassistant/output/weather/Suresnes
+      payload: |-
+        {
+          "current": {
+            "condition": "{{ states.weather.suresnes.state }}",
+            "temperature": {{ state_attr('weather.suresnes', 'temperature') }},
+            "humidity": {{ state_attr('weather.suresnes', 'humidity') }},
+            "pressure": {{ state_attr('weather.suresnes', 'pressure') }},
+            "wind_bearing": {{ state_attr('weather.suresnes', 'wind_bearing') }},
+            "wind_speed": {{ state_attr('weather.suresnes', 'wind_speed') }}
+          },
+          "forecasts": {
+            "daily": {{ daily['weather.suresnes'].forecast|tojson }},
+            "hourly": {{ hourly['weather.suresnes'].forecast|tojson }}
+          }
+        }
+mode: single

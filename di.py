@@ -19,6 +19,7 @@ from data.media_player import MediaPlayerDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
 from data.timer import TimerDataResolver
+from data.weather_mqtt import CurrentWeatherDataMqttResolver
 from dependency_injector import containers, providers
 from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer
@@ -50,12 +51,12 @@ def real_rgbmatrixoptions_factory(cols: int, rows: int, hardware_mapping: str, g
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
 
-    purpleair = providers.Singleton(
-        PurpleAirDataResolver,
-        url=config.purpleair.url,
-    )
+    # purpleair = providers.Singleton(
+    #     PurpleAirDataResolver,
+    #     url=config.purpleair.url,
+    # )
 
-    env_canada = providers.Singleton(EnvironmentCanadaDataResolver)
+    current_weather = providers.Singleton(CurrentWeatherDataMqttResolver, topic=config.weather.mqtt_topic)
 
     display_tz = providers.Singleton(pytz.timezone, config.display_tz)
 
@@ -110,7 +111,7 @@ class Container(containers.DeclarativeContainer):
     current_temperature_component = providers.Singleton(
         CurrentTemperatureComponent,
         box=current_position,
-        purpleair=purpleair,
+        data_resolver=current_weather,
         font_path=config.font_path,
     )
     day_of_week_component = providers.Singleton(
@@ -130,12 +131,12 @@ class Container(containers.DeclarativeContainer):
 
     lower_position_inner = (0, 0, 64, 19)
     lower_position = (0, 13, 64, 19)
-    aqi_component = providers.Singleton(
-        AqiComponent,
-        purpleair=purpleair,
-        box=lower_position_inner,
-        font_path=config.font_path,
-    )
+    # aqi_component = providers.Singleton(
+    #     AqiComponent,
+    #     purpleair=purpleair,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    # )
     calendar_component = providers.Singleton(
         CalendarComponent,
         calendar=calendar,
@@ -143,19 +144,19 @@ class Container(containers.DeclarativeContainer):
         font_path=config.font_path,
         display_tz=display_tz,
     )
-    weather_forecast_component = providers.Singleton(
-        WeatherForecastComponent,
-        env_canada=env_canada,
-        box=lower_position_inner,
-        font_path=config.font_path,
-    )
-    sun_forecast_component = providers.Singleton(
-        SunForecastComponent,
-        env_canada=env_canada,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        display_tz=display_tz,
-    )
+    # # weather_forecast_component = providers.Singleton(
+    #     WeatherForecastComponent,
+    #     env_canada=env_canada,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    # )
+    # sun_forecast_component = providers.Singleton(
+    #     SunForecastComponent,
+    #     env_canada=env_canada,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     display_tz=display_tz,
+    # )
     oven_component = providers.Singleton(
         OvenOnComponent,
         oven_on=oven_on,
@@ -230,10 +231,10 @@ class Container(containers.DeclarativeContainer):
     lower_panels = providers.Singleton(
         MultiPanelPanel,
         panels=providers.List(
-            aqi_component,
+            # aqi_component,
             calendar_component,
-            weather_forecast_component,
-            sun_forecast_component,
+            # weather_forecast_component,
+            # sun_forecast_component,
             oven_component,
             distance_to_mathieu_component,
             distance_to_amanda_component,
@@ -301,14 +302,15 @@ class Container(containers.DeclarativeContainer):
             back_door_status,
             media_player_status,
             timer_status,
+            current_weather,
         ),
     )
 
     clock = providers.Singleton(
         Clock,
         data_resolvers=providers.List(
-            purpleair,
-            env_canada,
+            # purpleair,
+            # env_canada,
             calendar,
         ),
         time_component=time_component,

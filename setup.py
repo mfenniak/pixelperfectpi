@@ -30,6 +30,8 @@ setup(
         'data/purpleair',
         'data/resolver',
         'data/timer',
+        'data/weather_mqtt',
+        'data/weather',
         'di',
         'displaybase',
         'draw/__init__',
