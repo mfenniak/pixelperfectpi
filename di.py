@@ -10,6 +10,7 @@ from component.oven import OvenOnComponent
 from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
+from component.uv_index import CurrentUvIndexComponent
 from component.weatherforecast import WeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
@@ -112,6 +113,11 @@ def create_clock(config: AppConfig) -> Clock:
         data_resolver=current_weather,
         font_path=config.font_path,
     )
+    uv_index_component = CurrentUvIndexComponent(
+        box=current_position,
+        data_resolver=current_weather,
+        font_path=config.font_path,
+    )
     day_of_week_component = DayOfWeekComponent(
         box=current_position,
         font_path=config.font_path,
@@ -119,6 +125,7 @@ def create_clock(config: AppConfig) -> Clock:
     current_component = MultiPanelPanel(
         panels=[
             current_temperature_component,
+            uv_index_component,
             day_of_week_component,
         ],
         box=current_position,

@@ -19,6 +19,7 @@ setup(
         'component/sunforecast',
         'component/time',
         'component/timer',
+        'component/uv_index',
         'component/weatherforecast',
         'config',
         'data/__init__',
