@@ -20,6 +20,7 @@ setup(
         'component/time',
         'component/timer',
         'component/weatherforecast',
+        'config',
         'data/__init__',
         'data/calendar',
         'data/distance',

@@ -1,13 +1,11 @@
 import asyncio
 import sys
-from typing import Literal, List
+from typing import Literal, List, Callable
 from rgbmatrix import RGBMatrix # type: ignore
-from dependency_injector.providers import Provider
 from service import Service
 
-
 class DisplayBase(object):
-    def __init__(self, rgbmatrix_provider: Provider[RGBMatrix], shutdown_event: asyncio.Event, services: List[Service]) -> None:
+    def __init__(self, rgbmatrix_provider: Callable[[], RGBMatrix], shutdown_event: asyncio.Event, services: List[Service]) -> None:
         self.rgbmatrix_provider = rgbmatrix_provider
         self.services = services
 
@@ -88,7 +86,9 @@ class DisplayBase(object):
 
             elif self.state == "ON":
                 if self.matrix is None:
+                    print("Constructing matrix...", self.rgbmatrix_provider)
                     self.matrix = self.rgbmatrix_provider()
+                    print("Success!")
                     await self.create_canvas(self.matrix)
 
                 await self.draw_frame(self.matrix)

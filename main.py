@@ -1,45 +1,47 @@
 #!/usr/bin/env python
 
-from dependency_injector.wiring import Provide, inject
-from di import Container
-from pixelperfectpi import Clock
+from config import AppConfig, LocationConfig, MQTTConfig
+from di import create_clock
+from typing import Literal
+import os
 import socket
 
-@inject
-def main(clock: Clock = Provide[Container.clock]) -> None:
+def load_config() -> AppConfig:
+    with open("/proc/cpuinfo") as f:
+        cpuinfo = f.read()
+    mode: Literal['real', 'emulated'] = "real" if "Raspberry Pi" in cpuinfo else "emulated"
+
+    return AppConfig(
+        mode="emulated" if os.environ.get("EMULATED") is not None else mode,
+        gpio_hardware_mapping=os.environ.get("GPIO_HARDWARE_MAPPING", "regular"),
+        gpio_slowdown=int(os.environ.get("GPIO_SLOWDOWN", 1)),
+        purpleair_url=os.environ.get("PURPLEAIR_URL", "http://10.156.95.135/json"),
+        display_tz=os.environ.get("DISPLAY_TZ", "America/Edmonton"),
+        calendar_ical_url=os.environ["ICAL_URL"],  # This is required; ensure it is set in your environment
+        font_path=os.environ.get("FONT_PATH", "./fonts/"),
+        icon_path=os.environ.get("ICON_PATH", "./icons/"),
+        mqtt=MQTTConfig(
+            hostname=os.environ["MQTT_HOST"],
+            port=int(os.environ.get("MQTT_PORT", 1883)),
+            username=os.environ["MQTT_USERNAME"],
+            password=os.environ["MQTT_PASSWORD"],
+            discovery_prefix=os.environ.get("MQTT_DISCOVERY_PREFIX", "homeassistant"),
+            discovery_node_id=os.environ.get("MQTT_DISCOVERY_NODE_ID", "pixelperfectpi"),
+            discovery_object_id=os.environ.get("MQTT_DISCOVERY_OBJECT_ID", socket.gethostname())
+        ),
+        homeassistant_media_mqtt_topic=os.environ.get("HA_MEDIA_MQTT_TOPIC"),
+        location=LocationConfig(
+            latitude=float(os.environ.get("LATITUDE", 51.036476342750326)),
+            longitude=float(os.environ.get("LONGITUDE", -114.1045886332063))
+        ),
+        weather_mqtt_topic=os.environ.get("WEATHER_MQTT_TOPIC", "homeassistant/output/weather/Calgary")
+    )
+
+def main(config: AppConfig) -> None:
+    clock = create_clock(config)
     clock.process()
 
 # Main function
 if __name__ == "__main__":
-    with open("/proc/cpuinfo") as f:
-        cpuinfo = f.read()
-    if "Raspberry Pi" in cpuinfo:
-        DEFAULT_EMULATED = "real"
-    else:
-        DEFAULT_EMULATED = "emulated"
-
-    container = Container()
-
-    container.config.mode.from_env("EMULATED", as_=str, default=DEFAULT_EMULATED)
-    container.config.gpio.hardware_mapping.from_env("GPIO_HARDWARE_MAPPING", as_=str, default="regular")
-    container.config.gpio.slowdown.from_env("GPIO_SLOWDOWN", as_=int, default=1)
-    container.config.purpleair.url.from_env("PURPLEAIR_URL", as_=str, default="http://10.156.95.135/json")
-    container.config.display_tz.from_env("DISPLAY_TZ", as_=str, default="America/Edmonton")
-    container.config.calendar.ical_url.from_env("ICAL_URL", as_=str, required=True)
-    container.config.font_path.from_env("FONT_PATH", as_=str, default="./fonts/")
-    container.config.icon_path.from_env("ICON_PATH", as_=str, default="./icons/")
-    container.config.mqtt.hostname.from_env("MQTT_HOST")
-    container.config.mqtt.port.from_env("MQTT_PORT", as_=int, default=1883)
-    container.config.mqtt.username.from_env("MQTT_USERNAME", as_=str)
-    container.config.mqtt.password.from_env("MQTT_PASSWORD", as_=str)
-    container.config.mqtt.discovery.prefix.from_env("MQTT_DISCOVERY_PREFIX", as_=str, default="homeassistant")
-    container.config.mqtt.discovery.node_id.from_env("MQTT_DISCOVERY_NODE_ID", as_=str, default="pixelperfectpi")
-    container.config.mqtt.discovery.object_id.from_env("MQTT_DISCOVERY_OBJECT_ID", as_=str, default=socket.gethostname())
-    container.config.homeassistant.media_mqtt_topic.from_env("HA_MEDIA_MQTT_TOPIC")
-    container.config.location.latitude.from_env("LATITUDE", as_=float, default=51.036476342750326)
-    container.config.location.longitude.from_env("LONGITUDE", as_=float, default=-114.1045886332063)
-    container.config.weather.mqtt_topic.from_env("WEATHER_MQTT_TOPIC", as_=str, default="homeassistant/output/weather/Calgary")
-
-    container.wire(modules=[__name__])
-    main()
-    container.shutdown_resources()
+    config = load_config()
+    main(config)

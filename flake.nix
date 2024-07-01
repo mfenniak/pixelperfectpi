@@ -25,7 +25,6 @@
             ps.aiohttp
             ps.aiomqtt
             ps.backoff
-            ps.dependency-injector
             ps.icalendar
             ps.lxml
             ps.mypy
