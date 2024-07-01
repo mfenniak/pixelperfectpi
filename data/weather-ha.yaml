@@ -32,7 +32,8 @@ action:
             "humidity": {{ state_attr('weather.suresnes', 'humidity') }},
             "pressure": {{ state_attr('weather.suresnes', 'pressure') }},
             "wind_bearing": {{ state_attr('weather.suresnes', 'wind_bearing') }},
-            "wind_speed": {{ state_attr('weather.suresnes', 'wind_speed') }}
+            "wind_speed": {{ state_attr('weather.suresnes', 'wind_speed') }},
+            "uv": {{ states.sensor.suresnes_uv.state }}
           },
           "forecasts": {
             "daily": {{ daily['weather.suresnes'].forecast|tojson }},

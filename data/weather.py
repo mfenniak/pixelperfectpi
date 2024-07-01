@@ -17,6 +17,7 @@ class CurrentWeatherData:
     pressure: None | float # hPa
     wind_bearing: None | int
     wind_speed: None | float # km/h
+    uv: None | int # UV index
 
 @dataclass
 class WeatherForecast:

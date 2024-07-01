@@ -20,6 +20,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
             pressure=None,
             wind_bearing=None,
             wind_speed=None,
+            uv=None,
         )
         self.topic = topic
 
@@ -41,12 +42,13 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
     def parse_weather_data(self, data: Dict[str, Any]) -> CurrentWeatherData:
         current = data['current']
         return CurrentWeatherData(
-            condition=current['condition'],
-            temperature=current['temperature'],
-            humidity=current['humidity'],
-            pressure=current['pressure'],
-            wind_bearing=current['wind_bearing'],
-            wind_speed=current['wind_speed']
+            condition=current.get('condition'),
+            temperature=current.get('temperature'),
+            humidity=current.get('humidity'),
+            pressure=current.get('pressure'),
+            wind_bearing=current.get('wind_bearing'),
+            wind_speed=current.get('wind_speed'),
+            uv=current.get('uv'),
         )
 
 # class ForecastWeatherDataMqttResolver(DataResolver[WeatherForecast], MqttMessageReceiver):
