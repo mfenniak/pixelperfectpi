@@ -22,7 +22,7 @@ from data.media_player import MediaPlayerDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
 from data.timer import TimerDataResolver
-from data.weather_mqtt import CurrentWeatherDataMqttResolver
+from data.weather_mqtt import CurrentWeatherDataMqttResolver, WeatherForecastDataMqttResolver
 from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
 from pixelperfectpi import Clock
@@ -62,6 +62,10 @@ def create_clock(config: AppConfig) -> Clock:
         topic=config.weather_mqtt_topic,
     )
     data_resolvers.append(current_weather)
+    weather_forecast_data = WeatherForecastDataMqttResolver(
+        topic=config.weather_mqtt_topic,
+    )
+    data_resolvers.append(weather_forecast_data)
     calendar_data = CalendarDataResolver(
         ical_url=config.calendar_ical_url,
         display_tz=display_tz,
@@ -145,12 +149,11 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         display_tz=display_tz,
     )
-    # weather_forecast_component = providers.Singleton(
-    #     WeatherForecastComponent,
-    #     env_canada=env_canada,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    # )
+    weather_forecast_component = WeatherForecastComponent(
+        weather_forecast_data=weather_forecast_data,
+        box=lower_position_inner,
+        font_path=config.font_path,
+    )
     # sun_forecast_component = providers.Singleton(
     #     SunForecastComponent,
     #     env_canada=env_canada,
@@ -226,7 +229,7 @@ def create_clock(config: AppConfig) -> Clock:
         panels=[
             # aqi_component,
             calendar_component,
-            # weather_forecast_component,
+            weather_forecast_component,
             # sun_forecast_component,
             oven_component,
             distance_component_mathieu,

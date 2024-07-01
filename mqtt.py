@@ -140,10 +140,12 @@ class MqttServer(Service):
                         elif cmd == "OFF":
                             await clock.turn_off()
                     else:
+                        message_handled = False
                         for other_receiver in self.other_receivers:
                             if await other_receiver.handle_message(message):
-                                break
-                        else:
+                                message_handled = True
+                                # Do not break; allow multiple receivers to handle the same message
+                        if not message_handled:
                             print("Unknown message", message.topic, message.payload)
                     # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
                     messages_next = asyncio.create_task(anext(messages)) # type: ignore
