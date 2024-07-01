@@ -36,6 +36,9 @@ class DrawPanel(Generic[T]):
     def fill(self, color: tuple[int, int, int]) -> None:
         self.buffer.paste(color, box=(0,0,self.w,self.h))
 
+    def set_pixel(self, x: int, y: int, color: tuple[int, int, int]) -> None:
+        self.buffer.putpixel((x, y), color)
+
     def draw_icon(self,
         icon: Image.Image, 
         halign: Literal["center"] | Literal["left"] | Literal["right"]="left",
