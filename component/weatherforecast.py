@@ -4,6 +4,7 @@ from draw import DrawPanel, Box
 from typing import Any, Iterable
 import datetime
 import pytz
+import itertools
 
 @dataclass
 class ForecastWithLabel:
@@ -84,15 +85,21 @@ class HourlyWeatherForecastComponent(DrawPanel[WeatherForecasts]):
 
     def next_hours(self, data: WeatherForecasts) -> Iterable[WeatherForecast]:
         now = datetime.datetime.now(tz=pytz.utc)
+        # round down now to the hour, so that the current hour's forecast is
+        # included, unless the hour is nearly over... this doesn't always work
+        # since sometimes HA will refresh and remove this hour's forecast since
+        # it's current.
+        if now.minute < 45:
+            now = now.replace(minute=0, second=0, microsecond=0)
         for forecast in sorted(data.hourly, key=lambda f: f.datetime or datetime.datetime.min):
-            if forecast.datetime is not None and now < forecast.datetime:
+            if forecast.datetime is not None and now <= forecast.datetime:
                 yield forecast
 
     def do_draw(self, now: float, data: WeatherForecasts | None, frame: int) -> None:
         self.fill((16, 0, 0))
         if data is None:
             return
-        next_hours = [x for x in self.next_hours(data)][:4]
+        next_hours = [x for x in itertools.islice(self.next_hours(data), 4)]
         for i, forecast in enumerate(next_hours):
             self.subpanels[i].draw(self.buffer, now, forecast, 0)
 
