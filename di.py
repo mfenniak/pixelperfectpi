@@ -11,7 +11,7 @@ from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
 from component.uv_index import CurrentUvIndexComponent
-from component.weatherforecast import WeatherForecastComponent
+from component.weatherforecast import DailyWeatherForecastComponent, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
 from data.calendar import CalendarDataResolver
@@ -149,8 +149,14 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         display_tz=display_tz,
     )
-    weather_forecast_component = WeatherForecastComponent(
+    daily_weather_forecast_component = DailyWeatherForecastComponent(
         weather_forecast_data=weather_forecast_data,
+        box=lower_position_inner,
+        font_path=config.font_path,
+    )
+    hourly_weather_forecast_component = HourlyWeatherForecastComponent(
+        weather_forecast_data=weather_forecast_data,
+        display_tz=display_tz,
         box=lower_position_inner,
         font_path=config.font_path,
     )
@@ -229,7 +235,8 @@ def create_clock(config: AppConfig) -> Clock:
         panels=[
             # aqi_component,
             calendar_component,
-            weather_forecast_component,
+            daily_weather_forecast_component,
+            hourly_weather_forecast_component,
             # sun_forecast_component,
             oven_component,
             distance_component_mathieu,
