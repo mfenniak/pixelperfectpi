@@ -5,6 +5,10 @@ from typing import Any, Iterable
 import datetime
 import pytz
 import itertools
+from stretchable import Node
+from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
+from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
+from stretchable.style.geometry.length import Scale, LengthPoints
 
 @dataclass
 class ForecastWithLabel:
@@ -110,43 +114,164 @@ class HourlyWeatherForecastSingleHourPanel(DrawPanel[WeatherForecast | None]):
         self.display_tz = display_tz
         self.load_font("4x6")
 
+        self.root = Node(
+            size=(self.w, self.h),
+            flex_direction=FlexDirection.COLUMN,
+            align_items=AlignItems.CENTER,
+            justify_content=JustifyContent.CENTER,
+            # justify_content=JustifyContent.SPACE_AROUND,
+        )
+
+        self.temp_node = Node()
+        # FIXME: https://github.com/mortencombat/stretchable/pull/90
+        self.temp_node.measure = self.measure_temp_node
+        self.root.append(self.temp_node)
+
+        self.precip_node = Node()
+        # FIXME: https://github.com/mortencombat/stretchable/pull/90
+        self.precip_node.measure = self.measure_precip_node
+        self.root.append(self.precip_node)
+
+        self.time_node = Node()
+        # FIXME: https://github.com/mortencombat/stretchable/pull/90
+        self.time_node.measure = self.measure_time_node
+        self.root.append(self.time_node)
+
+        self.forecast: WeatherForecast | None = None
+
     def frame_count(self, data: WeatherForecast | None, now: float) -> int:
         if data is None:
             return 0
         else:
             return 1
 
+    def temp_text(self) -> str:
+        if self.forecast is not None and self.forecast.temperature_high is not None:
+            return f"{self.forecast.temperature_high:.0f}°"
+        return ""
+
+    def precip_text(self) -> str:
+        if self.forecast is not None and self.forecast.datetime is not None:
+            if self.forecast.datetime.hour == 23:
+                self.forecast.precipitation = 2.5
+            # print("hour", self.forecast.datetime.hour)
+        if self.forecast is not None and self.forecast.precipitation is not None and self.forecast.precipitation > 0:
+            return f"{self.forecast.precipitation:.0f}mm"
+        return ""
+
+    def time_text(self) -> str:
+        if self.forecast is not None and self.forecast.datetime is not None:
+            time_text = self.forecast.datetime.astimezone(self.display_tz).strftime("%-I%p")
+            if time_text.endswith("M"): # PM/AM -> P/A; no strftime option for that
+                time_text = time_text[:-1]
+            if time_text.endswith("P") or time_text.endswith("A"): # lowercase this
+                time_text = time_text[:-1] + time_text[-1].lower()
+            return time_text
+        return ""
+
+    def measure_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace, text: str) -> SizePoints:
+        # print(f"measure_node, size_points={size_points}, size_available_space={size_available_space}, text={text}")
+        if text == "":
+            return SizePoints(LengthPoints.points(0), LengthPoints.points(0))
+
+        if size_available_space.width.scale == Scale.POINTS:
+            # Request for something with a specific width...
+            max_width = size_available_space.width.value
+        else:
+            max_width = 1024
+        
+        (width, height) = self.measure_text(text, max_width)
+
+        # print(f"measure_node, text={text}, returning {width=}, {height=}")
+
+        return SizePoints(
+            LengthPoints.points(width),
+            LengthPoints.points(height)
+        )
+
+    def measure_temp_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
+        return self.measure_node(size_points, size_available_space, self.temp_text())
+
+    def measure_precip_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
+        return self.measure_node(size_points, size_available_space, self.precip_text())
+
+    def measure_time_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
+        return self.measure_node(size_points, size_available_space, self.time_text())
+
     def do_draw(self, now: float, data: WeatherForecast | None, frame: int) -> None:
         self.fill((16, 0, 0))
         if data is None:
             return
-        self.draw_forecast(data)
 
-    def draw_forecast(self, forecast: WeatherForecast) -> None:
-        if forecast.datetime is None:
-            return
+        if data is not self.forecast:
+            self.forecast = data
+            self.root.mark_dirty()
 
-        time_text = forecast.datetime.astimezone(self.display_tz).strftime("%-I%p")
-        if time_text.endswith("M"): # PM/AM -> P/A; no strftime option for that
-            time_text = time_text[:-1]
-        if time_text.endswith("P") or time_text.endswith("A"): # lowercase this
-            time_text = time_text[:-1] + time_text[-1].lower()
-        self.draw_text(
-            (200, 200, 200),
-            time_text,
-            valign="top",
+        if self.root.is_dirty:
+            # print("root is dirty")
+            self.root.compute_layout(
+                available_space=SizeAvailableSpace(self.w, self.h),
+                use_rounding=True,
+            )
+            # print("root\t", self.root.get_box())
+            # print("temp_node\t", self.temp_node.get_box(relative=False))
+            # print("precip_node\t", self.precip_node.get_box(relative=False))
+            # print("time_node\t", self.time_node.get_box(relative=False))
+
+        box = self.temp_node.get_box(relative=False)
+        self.rect(
+            (32, 0, 0),
+            int(box.x), int(box.y),
+            int(box.width), int(box.height),
         )
+        # FIXME: this won't work if this text wraps -- would need to pass the
+        # box's width to wrap correctly -- but this should work temporarily for
+        # this component before we do a full layout/render rewrite
+        self.draw_text((200, 200, 200), self.temp_text(), pad_left=int(box.x), pad_top=int(box.y), valign="top", halign="left")
 
-        if forecast.temperature_high is not None:
-            self.draw_text(
-                (200, 200, 200),
-                f"{forecast.temperature_high:.0f}°",
-                valign="middle",
-            )
+        box = self.precip_node.get_box(relative=False)
+        self.rect(
+            (0, 0, 32),
+            int(box.x), int(box.y),
+            int(box.width), int(box.height),
+        )
+        self.draw_text((200, 200, 200), self.precip_text(), pad_left=int(box.x), pad_top=int(box.y), valign="top", halign="left")
 
-        if forecast.precipitation is not None and forecast.precipitation > 0:
-            self.draw_text(
-                (200, 200, 200),
-                f"{forecast.precipitation:.0f}mm",
-                valign="bottom",
-            )
+        box = self.time_node.get_box(relative=False)
+        self.rect(
+            (0, 32, 0),
+            int(box.x), int(box.y),
+            int(box.width), int(box.height),
+        )
+        self.draw_text((200, 200, 200), self.time_text(), pad_left=int(box.x), pad_top=int(box.y), valign="top", halign="left")
+        
+        # self.draw_forecast(data)
+
+    # def draw_forecast(self, forecast: WeatherForecast) -> None:
+    #     if forecast.datetime is None:
+    #         return
+
+    #     time_text = forecast.datetime.astimezone(self.display_tz).strftime("%-I%p")
+    #     if time_text.endswith("M"): # PM/AM -> P/A; no strftime option for that
+    #         time_text = time_text[:-1]
+    #     if time_text.endswith("P") or time_text.endswith("A"): # lowercase this
+    #         time_text = time_text[:-1] + time_text[-1].lower()
+    #     self.draw_text(
+    #         (200, 200, 200),
+    #         time_text,
+    #         valign="top",
+    #     )
+
+    #     if forecast.temperature_high is not None:
+    #         self.draw_text(
+    #             (200, 200, 200),
+    #             f"{forecast.temperature_high:.0f}°",
+    #             valign="middle",
+    #         )
+
+    #     if forecast.precipitation is not None and forecast.precipitation > 0:
+    #         self.draw_text(
+    #             (200, 200, 200),
+    #             f"{forecast.precipitation:.0f}mm",
+    #             valign="bottom",
+    #         )

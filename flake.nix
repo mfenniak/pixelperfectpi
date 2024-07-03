@@ -43,6 +43,7 @@
           cargoHash = "sha256-1Fe3UfREQ2fiQYiwCT/ohXgeJqEmhwyQGyQrFRpd78A=";
           cargoPatches = [
             ./stretchable-Cargo.lock.patch
+            ./stretchable-py.typed.patch
           ];
           buildPhase = ''
             ${pkgs.maturin}/bin/maturin build --interpreter ${pythonInterpreter}/bin/python
