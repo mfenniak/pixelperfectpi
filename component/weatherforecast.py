@@ -145,10 +145,11 @@ class HourlyWeatherForecastSingleHourPanel(DrawPanel[WeatherForecast | None]):
         return ""
 
     def precip_text(self) -> str:
-        if self.forecast is not None and self.forecast.datetime is not None:
-            if self.forecast.datetime.hour == 23:
-                self.forecast.precipitation = 2.5
-            # print("hour", self.forecast.datetime.hour)
+        # Fake precip for testing...
+        # if self.forecast is not None and self.forecast.datetime is not None:
+        #     if self.forecast.datetime.hour == 23:
+        #         self.forecast.precipitation = 2.5
+        #     # print("hour", self.forecast.datetime.hour)
         if self.forecast is not None and self.forecast.precipitation is not None and self.forecast.precipitation > 0:
             return f"{self.forecast.precipitation:.0f}mm"
         return ""
