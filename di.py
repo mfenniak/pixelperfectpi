@@ -1,17 +1,17 @@
-from component.aqi import AqiComponent
-from component.calendar import CalendarComponent
-from component.countdown import CountdownComponent
-from component.currenttemp import CurrentTemperatureComponent
-from component.dayofweek import DayOfWeekComponent
-from component.distance import DistanceComponent
-from component.door import DoorComponent
-from component.media_player import MediaPlayerComponent
-from component.oven import OvenOnComponent
-from component.sunforecast import SunForecastComponent
+# from component.aqi import AqiComponent
+# from component.calendar import CalendarComponent
+# from component.countdown import CountdownComponent
+# from component.currenttemp import CurrentTemperatureComponent
+# from component.dayofweek import DayOfWeekComponent
+# from component.distance import DistanceComponent
+# from component.door import DoorComponent
+# from component.media_player import MediaPlayerComponent
+# from component.oven import OvenOnComponent
+# from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
-from component.timer import TimerComponent
-from component.uv_index import CurrentUvIndexComponent
-from component.weatherforecast import DailyWeatherForecastComponent, HourlyWeatherForecastComponent
+# from component.timer import TimerComponent
+# from component.uv_index import CurrentUvIndexComponent
+# from component.weatherforecast import DailyWeatherForecastComponent, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
 from data.calendar import CalendarDataResolver
@@ -22,8 +22,9 @@ from data.media_player import MediaPlayerDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
 from data.timer import TimerDataResolver
+from data.currenttime import CurrentTimeDataResolver
 from data.weather_mqtt import CurrentWeatherDataMqttResolver, WeatherForecastDataMqttResolver
-from draw import MultiPanelPanel
+# from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
 from pixelperfectpi import Clock
 from typing import List
@@ -58,6 +59,8 @@ def create_clock(config: AppConfig) -> Clock:
 
     # Create data resolvers
     data_resolvers: List[DataResolver] = []
+    current_time = CurrentTimeDataResolver()
+    data_resolvers.append(current_time)
     current_weather = CurrentWeatherDataMqttResolver(
         topic=config.weather_mqtt_topic,
     )
@@ -106,151 +109,152 @@ def create_clock(config: AppConfig) -> Clock:
     )
     data_resolvers.append(timer_data)
 
-    # Create components
+    # # Create components
     time_component = TimeComponent(
-        box=(29, 0, 35, 13),
+        # box=(29, 0, 35, 13),
         font_path=config.font_path,
+        current_time=current_time,
     )
-    current_position = (0, 0, 29, 13)
-    current_temperature_component = CurrentTemperatureComponent(
-        box=current_position,
-        data_resolver=current_weather,
-        font_path=config.font_path,
-    )
-    uv_index_component = CurrentUvIndexComponent(
-        box=current_position,
-        data_resolver=current_weather,
-        font_path=config.font_path,
-    )
-    day_of_week_component = DayOfWeekComponent(
-        box=current_position,
-        font_path=config.font_path,
-    )
-    current_component = MultiPanelPanel(
-        panels=[
-            current_temperature_component,
-            uv_index_component,
-            day_of_week_component,
-        ],
-        box=current_position,
-        font_path=config.font_path,
-    )
-    lower_position_inner = (0, 0, 64, 19)
-    lower_position = (0, 13, 64, 19)
-    # aqi_component = providers.Singleton(
-    #     AqiComponent,
-    #     purpleair=purpleair,
-    #     box=lower_position_inner,
+    # current_position = (0, 0, 29, 13)
+    # current_temperature_component = CurrentTemperatureComponent(
+    #     box=current_position,
+    #     data_resolver=current_weather,
     #     font_path=config.font_path,
     # )
-    calendar_component = CalendarComponent(
-        calendar=calendar_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        display_tz=display_tz,
-    )
-    daily_weather_forecast_component = DailyWeatherForecastComponent(
-        weather_forecast_data=weather_forecast_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-    )
-    hourly_weather_forecast_component = HourlyWeatherForecastComponent(
-        weather_forecast_data=weather_forecast_data,
-        display_tz=display_tz,
-        box=lower_position_inner,
-        font_path=config.font_path,
-    )
-    # sun_forecast_component = providers.Singleton(
-    #     SunForecastComponent,
-    #     env_canada=env_canada,
+    # uv_index_component = CurrentUvIndexComponent(
+    #     box=current_position,
+    #     data_resolver=current_weather,
+    #     font_path=config.font_path,
+    # )
+    # day_of_week_component = DayOfWeekComponent(
+    #     box=current_position,
+    #     font_path=config.font_path,
+    # )
+    # current_component = MultiPanelPanel(
+    #     panels=[
+    #         current_temperature_component,
+    #         uv_index_component,
+    #         day_of_week_component,
+    #     ],
+    #     box=current_position,
+    #     font_path=config.font_path,
+    # )
+    # lower_position_inner = (0, 0, 64, 19)
+    # lower_position = (0, 13, 64, 19)
+    # # aqi_component = providers.Singleton(
+    # #     AqiComponent,
+    # #     purpleair=purpleair,
+    # #     box=lower_position_inner,
+    # #     font_path=config.font_path,
+    # # )
+    # calendar_component = CalendarComponent(
+    #     calendar=calendar_data,
     #     box=lower_position_inner,
     #     font_path=config.font_path,
     #     display_tz=display_tz,
     # )
-    oven_component = OvenOnComponent(
-        oven_on=oven_on_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-    )
-    distance_component_mathieu = DistanceComponent(
-        distance=distance_to_mathieu_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-        label="Mathieu",
-        icon="runner",
-    )
-    distance_component_amanda = DistanceComponent(
-        distance=distance_to_amanda_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-        label="Amanda",
-        icon="cyclist",
-    )
-    door_component_garage = DoorComponent(
-        door=garage_door_status_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-        name="Garage",
-    )
-    door_component_man = DoorComponent(
-        door=garage_man_door_status_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-        name="Man Door",
-    )
-    door_component_back = DoorComponent(
-        door=back_door_status_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-        name="Back Door",
-    )
-    media_player_component = MediaPlayerComponent(
-        media_player=media_player_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-    )
-    timer_component = TimerComponent(
-        timer=timer_data,
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-    )
-    paris_component = CountdownComponent(
-        display_tz=display_tz,
-        target_date=pytz.timezone("America/Edmonton").localize(datetime.datetime(2024, 6, 28, 19, 40, 0)),
-        box=lower_position_inner,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-    )
+    # daily_weather_forecast_component = DailyWeatherForecastComponent(
+    #     weather_forecast_data=weather_forecast_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    # )
+    # hourly_weather_forecast_component = HourlyWeatherForecastComponent(
+    #     weather_forecast_data=weather_forecast_data,
+    #     display_tz=display_tz,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    # )
+    # # sun_forecast_component = providers.Singleton(
+    # #     SunForecastComponent,
+    # #     env_canada=env_canada,
+    # #     box=lower_position_inner,
+    # #     font_path=config.font_path,
+    # #     display_tz=display_tz,
+    # # )
+    # oven_component = OvenOnComponent(
+    #     oven_on=oven_on_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    # )
+    # distance_component_mathieu = DistanceComponent(
+    #     distance=distance_to_mathieu_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    #     label="Mathieu",
+    #     icon="runner",
+    # )
+    # distance_component_amanda = DistanceComponent(
+    #     distance=distance_to_amanda_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    #     label="Amanda",
+    #     icon="cyclist",
+    # )
+    # door_component_garage = DoorComponent(
+    #     door=garage_door_status_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    #     name="Garage",
+    # )
+    # door_component_man = DoorComponent(
+    #     door=garage_man_door_status_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    #     name="Man Door",
+    # )
+    # door_component_back = DoorComponent(
+    #     door=back_door_status_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    #     name="Back Door",
+    # )
+    # media_player_component = MediaPlayerComponent(
+    #     media_player=media_player_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    # )
+    # timer_component = TimerComponent(
+    #     timer=timer_data,
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    # )
+    # paris_component = CountdownComponent(
+    #     display_tz=display_tz,
+    #     target_date=pytz.timezone("America/Edmonton").localize(datetime.datetime(2024, 6, 28, 19, 40, 0)),
+    #     box=lower_position_inner,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    # )
 
-    # Create panels
-    lower_panels = MultiPanelPanel(
-        panels=[
-            # aqi_component,
-            calendar_component,
-            daily_weather_forecast_component,
-            hourly_weather_forecast_component,
-            # sun_forecast_component,
-            oven_component,
-            distance_component_mathieu,
-            distance_component_amanda,
-            door_component_garage,
-            door_component_man,
-            door_component_back,
-            media_player_component,
-            timer_component,
-            paris_component,
-        ],
-        box=lower_position,
-        font_path=config.font_path,
-    )
+    # # Create panels
+    # lower_panels = MultiPanelPanel(
+    #     panels=[
+    #         # aqi_component,
+    #         calendar_component,
+    #         daily_weather_forecast_component,
+    #         hourly_weather_forecast_component,
+    #         # sun_forecast_component,
+    #         oven_component,
+    #         distance_component_mathieu,
+    #         distance_component_amanda,
+    #         door_component_garage,
+    #         door_component_man,
+    #         door_component_back,
+    #         media_player_component,
+    #         timer_component,
+    #         paris_component,
+    #     ],
+    #     box=lower_position,
+    #     font_path=config.font_path,
+    # )
 
     # RGB Matrix initialization
     if config.mode == "real":
@@ -288,9 +292,10 @@ def create_clock(config: AppConfig) -> Clock:
     # Create the clock system
     clock = Clock(
         data_resolvers=data_resolvers,
+        current_time=current_time,
         time_component=time_component,
-        current_component=current_component,
-        lower_panels=lower_panels,
+        # current_component=current_component,
+        # lower_panels=lower_panels,
         rgbmatrix_provider=rgbmatrix_provider,
         shutdown_event=shutdown_event,
         services=[mqtt_server],

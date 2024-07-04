@@ -1,13 +1,16 @@
+# from draw.multipanelpanel import MultiPanelPanel
 from component.time import TimeComponent
 from data import DataResolver
+from data.currenttime import CurrentTimeDataResolver
 from displaybase import DisplayBase
-from draw.multipanelpanel import MultiPanelPanel
 from PIL import Image
 from rgbmatrix import RGBMatrix # type: ignore
 from service import Service
+from stretchable import Node
 from typing import Set, TypeVar, Any, List, Callable
 import asyncio
 import time
+from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
 
 T = TypeVar('T')
 
@@ -27,12 +30,21 @@ T = TypeVar('T')
 
 
 class Clock(DisplayBase):
-    def __init__(self, rgbmatrix_provider: Callable[[], RGBMatrix], data_resolvers: List[DataResolver[T]], time_component: TimeComponent, current_component: MultiPanelPanel, lower_panels: MultiPanelPanel, shutdown_event: asyncio.Event, services: List[Service]) -> None:
+    def __init__(self,
+        rgbmatrix_provider: Callable[[], RGBMatrix],
+        data_resolvers: List[DataResolver[T]],
+        current_time: CurrentTimeDataResolver,
+        time_component: TimeComponent,
+        # current_component: MultiPanelPanel,
+        # lower_panels: MultiPanelPanel,
+        shutdown_event: asyncio.Event, services: List[Service]) -> None:
         super().__init__(rgbmatrix_provider=rgbmatrix_provider, shutdown_event=shutdown_event, services=services)
         self.data_resolvers = data_resolvers
+        self.layout_node = Node()
+        self.current_time = current_time
         self.time_component = time_component
-        self.current_component = current_component
-        self.lower_panels = lower_panels
+        # self.current_component = current_component
+        # self.lower_panels = lower_panels
 
     def pre_run(self) -> None:
         self.background_tasks: Set[asyncio.Task[Any]] = set()
@@ -40,6 +52,13 @@ class Clock(DisplayBase):
     async def create_canvas(self, matrix: RGBMatrix) -> None:
         self.offscreen_canvas = matrix.CreateFrameCanvas()
         self.buffer = Image.new("RGB", (self.offscreen_canvas.width, self.offscreen_canvas.height))
+        self.layout_node = Node(
+            size=(self.offscreen_canvas.width, self.offscreen_canvas.height),
+            flex_direction=FlexDirection.COLUMN,
+            justify_content=JustifyContent.CENTER,
+            align_items=AlignItems.CENTER,
+        )
+        self.layout_node.append(self.time_component)
 
     async def update_data(self) -> None:
         now = time.time()
@@ -49,10 +68,16 @@ class Clock(DisplayBase):
             task.add_done_callback(self.background_tasks.discard)
 
     async def draw_frame(self, matrix: RGBMatrix) -> None:
-        now = time.time()
-        self.time_component.draw(self.buffer, now=now, frame=0, data=None) # FIXME: find a way to remove frame/data params
-        self.current_component.draw(self.buffer, now=now, frame=0, data=None)
-        self.lower_panels.draw(self.buffer, now=now, frame=0, data=None)
+        if self.layout_node.is_dirty:
+            self.layout_node.compute_layout(use_rounding=True)
+
+        self.current_time.freeze_time()
+
+        self.time_component.draw(self.buffer) # FIXME: find a way to remove frame/data params
+        # self.current_component.draw(self.buffer, frame=0, data=None)
+        # self.lower_panels.draw(self.buffer, frame=0, data=None)
         self.offscreen_canvas.SetImage(self.buffer, 0, 0)
 
         self.offscreen_canvas = matrix.SwapOnVSync(self.offscreen_canvas)
+
+        self.current_time.release_time()
