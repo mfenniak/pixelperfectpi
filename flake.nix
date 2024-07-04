@@ -20,14 +20,14 @@
         pkgs = nixpkgs.legacyPackages.${system};
         stretchable = (pythonInterpreter: pkgs.rustPlatform.buildRustPackage rec {
           pname = "stretchable";
-          version = "v1.0.0";
+          version = "v1.0.1";
           # format = "pyproject";
 
           src = pkgs.fetchFromGitHub {
             owner = "mortencombat";
             repo = "stretchable";
             rev = version;
-            sha256 = "sha256-XKMRtGoyPCG4g8UBfPB8CGK0bIgPSFNCLmNXHr/2Mvs=";
+            sha256 = "sha256-QQTFlj2kHY+pNHBAdQ7ruhaLgiNK0XAFMu4k0DbGVz8=";
           };
 
           nativeBuildInputs = [
@@ -40,7 +40,7 @@
           # requiredPythonModules/hasPythonModule recognizes it as such...
           pythonModule = pythonInterpreter;
 
-          cargoHash = "sha256-1Fe3UfREQ2fiQYiwCT/ohXgeJqEmhwyQGyQrFRpd78A=";
+          cargoHash = "sha256-FiFqpoD9U0y1p6Q8cjbiqDEf3+cZzZv3Q4uMqUr7wGg=";
           cargoPatches = [
             ./stretchable-Cargo.lock.patch
             ./stretchable-py.typed.patch

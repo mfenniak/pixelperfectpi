@@ -122,19 +122,13 @@ class HourlyWeatherForecastSingleHourPanel(DrawPanel[WeatherForecast | None]):
             # justify_content=JustifyContent.SPACE_AROUND,
         )
 
-        self.temp_node = Node()
-        # FIXME: https://github.com/mortencombat/stretchable/pull/90
-        self.temp_node.measure = self.measure_temp_node
+        self.temp_node = Node(measure=self.measure_temp_node)
         self.root.append(self.temp_node)
 
-        self.precip_node = Node()
-        # FIXME: https://github.com/mortencombat/stretchable/pull/90
-        self.precip_node.measure = self.measure_precip_node
+        self.precip_node = Node(measure=self.measure_precip_node)
         self.root.append(self.precip_node)
 
-        self.time_node = Node()
-        # FIXME: https://github.com/mortencombat/stretchable/pull/90
-        self.time_node.measure = self.measure_time_node
+        self.time_node = Node(measure=self.measure_time_node)
         self.root.append(self.time_node)
 
         self.forecast: WeatherForecast | None = None
