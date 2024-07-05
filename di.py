@@ -2,7 +2,7 @@
 # from component.calendar import CalendarComponent
 # from component.countdown import CountdownComponent
 # from component.currenttemp import CurrentTemperatureComponent
-# from component.dayofweek import DayOfWeekComponent
+from component.dayofweek import DayOfWeekComponent
 # from component.distance import DistanceComponent
 # from component.door import DoorComponent
 # from component.media_player import MediaPlayerComponent
@@ -24,6 +24,8 @@ from data.purpleair import PurpleAirDataResolver
 from data.timer import TimerDataResolver
 from data.currenttime import CurrentTimeDataResolver
 from data.weather_mqtt import CurrentWeatherDataMqttResolver, WeatherForecastDataMqttResolver
+from draw import ContainerNode
+from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
 # from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
 from pixelperfectpi import Clock
@@ -111,7 +113,6 @@ def create_clock(config: AppConfig) -> Clock:
 
     # # Create components
     time_component = TimeComponent(
-        # box=(29, 0, 35, 13),
         font_path=config.font_path,
         current_time=current_time,
     )
@@ -126,10 +127,10 @@ def create_clock(config: AppConfig) -> Clock:
     #     data_resolver=current_weather,
     #     font_path=config.font_path,
     # )
-    # day_of_week_component = DayOfWeekComponent(
-    #     box=current_position,
-    #     font_path=config.font_path,
-    # )
+    day_of_week_component = DayOfWeekComponent(
+        font_path=config.font_path,
+        current_time=current_time,
+    )
     # current_component = MultiPanelPanel(
     #     panels=[
     #         current_temperature_component,
@@ -289,11 +290,21 @@ def create_clock(config: AppConfig) -> Clock:
         other_receivers=[data for data in data_resolvers if isinstance(data, MqttMessageReceiver)]
     )
 
+    # Layout components in a container node
+    root = ContainerNode(
+        flex_direction=FlexDirection.COLUMN,
+        justify_content=JustifyContent.CENTER,
+        align_items=AlignItems.CENTER,
+    )
+    root.add_child(time_component)
+    root.add_child(day_of_week_component)
+
     # Create the clock system
     clock = Clock(
         data_resolvers=data_resolvers,
         current_time=current_time,
-        time_component=time_component,
+        root=root,
+        # time_component=time_component,
         # current_component=current_component,
         # lower_panels=lower_panels,
         rgbmatrix_provider=rgbmatrix_provider,
