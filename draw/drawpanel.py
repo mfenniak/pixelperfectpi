@@ -14,6 +14,12 @@ class Drawable(Node, Generic[T]):
         self.imagedraw = ImageDraw.Draw(Image.new("RGBA", (1, 1))) # FIXME: typing hack
         super(Drawable, self).__init__(*args, **kwargs)
 
+    def verify_layout_is_clean(self) -> None:
+        # Before drawing, a chance to mark ourselves as dirty if our
+        # requirements have changed (typically due to data resolver's data
+        # change)
+        return
+
     # Internal - subclasses implement this to draw onto self.buffer.
     def do_draw(self) -> None:
         raise NotImplementedError

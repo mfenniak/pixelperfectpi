@@ -11,6 +11,20 @@ class TextNode(Drawable):
         self.pil_font: ImageFont.ImageFont = ImageFont.load(os.path.join(font_path, f"{font}.pil"))
         self.measuring_buffer = Image.new("RGBA", (1, 1))
         self.measuring_imagedraw = ImageDraw.Draw(self.measuring_buffer)
+        self.last_text = ""
+
+    def verify_layout_is_clean(self) -> None:
+        # Before drawing, a chance to mark ourselves as dirty if our
+        # requirements have changed (typically due to data resolver's data
+        # change)
+        text = self.get_text()
+        if len(text) != len(self.last_text):
+            # It's slightly wrong to not recompute layout on every text
+            # change... since the text could have different width... but it's a
+            # good enough approximation for now.
+            print(f"Text changed from {self.last_text} to {text}; length change!")
+            self.mark_dirty()
+            self.last_text = text
 
     def get_text(self) -> str:
         raise NotImplemented
@@ -34,7 +48,7 @@ class TextNode(Drawable):
             LengthPoints.points(width),
             LengthPoints.points(height)
         )
-        print(f"Sized at {retval}")
+        # print(f"Sized at {retval}")
         return retval
 
     # Calculate the width and height required to render the given text with the

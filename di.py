@@ -1,7 +1,7 @@
 # from component.aqi import AqiComponent
 # from component.calendar import CalendarComponent
 # from component.countdown import CountdownComponent
-# from component.currenttemp import CurrentTemperatureComponent
+from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 # from component.distance import DistanceComponent
 # from component.door import DoorComponent
@@ -117,11 +117,10 @@ def create_clock(config: AppConfig) -> Clock:
         current_time=current_time,
     )
     # current_position = (0, 0, 29, 13)
-    # current_temperature_component = CurrentTemperatureComponent(
-    #     box=current_position,
-    #     data_resolver=current_weather,
-    #     font_path=config.font_path,
-    # )
+    current_temperature_component = CurrentTemperatureComponent(
+        data_resolver=current_weather,
+        font_path=config.font_path,
+    )
     # uv_index_component = CurrentUvIndexComponent(
     #     box=current_position,
     #     data_resolver=current_weather,
@@ -292,12 +291,21 @@ def create_clock(config: AppConfig) -> Clock:
 
     # Layout components in a container node
     root = ContainerNode(
+        # is_root=True,
         flex_direction=FlexDirection.COLUMN,
         justify_content=JustifyContent.CENTER,
+        align_items=AlignItems.STRETCH,
+        size=(100*PCT, 100*PCT),
+    )
+    top = ContainerNode(
+        flex_direction=FlexDirection.ROW,
+        justify_content=JustifyContent.SPACE_BETWEEN,
         align_items=AlignItems.CENTER,
     )
-    root.add_child(time_component)
-    root.add_child(day_of_week_component)
+    top.add_child(day_of_week_component)
+    top.add_child(time_component)
+    root.add_child(top)
+    root.add_child(current_temperature_component)
 
     # Create the clock system
     clock = Clock(
