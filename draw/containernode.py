@@ -17,16 +17,16 @@ class ContainerNode(Drawable):
         self._children.append(child)
         self.append(child)
 
+    def verify_layout_is_clean(self) -> None:
+        for child in self._children:
+            child.verify_layout_is_clean()
+
     def draw(self, parent_buffer: Image.Image) -> None:
         if self.is_root:
-            for child in self._children:
-                child.verify_layout_is_clean()
+            self.verify_layout_is_clean()
             if self.is_dirty:
+                # print("Recomputing layout")
                 self.compute_layout(available_space=self.size, use_rounding=True)
-                # print("Layout computed w/ size", self.size)
-                # print(self.get_box(relative=False))
-                # for child in self._children:
-                #     print(child.get_box(relative=False))
         super().draw(parent_buffer)
 
     def do_draw(self) -> None:

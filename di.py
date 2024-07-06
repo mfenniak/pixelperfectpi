@@ -24,7 +24,7 @@ from data.purpleair import PurpleAirDataResolver
 from data.timer import TimerDataResolver
 from data.currenttime import CurrentTimeDataResolver
 from data.weather_mqtt import CurrentWeatherDataMqttResolver, WeatherForecastDataMqttResolver
-from draw import ContainerNode
+from draw import ContainerNode, CarouselDrawable
 from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
 # from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
@@ -290,22 +290,23 @@ def create_clock(config: AppConfig) -> Clock:
     )
 
     # Layout components in a container node
-    root = ContainerNode(
-        # is_root=True,
-        flex_direction=FlexDirection.COLUMN,
-        justify_content=JustifyContent.CENTER,
-        align_items=AlignItems.STRETCH,
-        size=(100*PCT, 100*PCT),
-    )
+    top_left = CarouselDrawable(current_time=current_time)
+    top_left.add_panel(day_of_week_component)
+    top_left.add_panel(current_temperature_component)
     top = ContainerNode(
         flex_direction=FlexDirection.ROW,
         justify_content=JustifyContent.SPACE_BETWEEN,
         align_items=AlignItems.CENTER,
     )
-    top.add_child(day_of_week_component)
+    top.add_child(top_left)
     top.add_child(time_component)
+    root = ContainerNode(
+        flex_direction=FlexDirection.COLUMN,
+        justify_content=JustifyContent.CENTER,
+        align_items=AlignItems.STRETCH,
+        size=(100*PCT, 100*PCT),
+    )
     root.add_child(top)
-    root.add_child(current_temperature_component)
 
     # Create the clock system
     clock = Clock(

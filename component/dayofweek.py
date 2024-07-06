@@ -1,10 +1,10 @@
 from data import DataResolver
-from draw import TextNode
+from draw import TextNode, CarouselPanel
 from PIL import ImageColor
 from typing import Any
 import time
 
-class DayOfWeekComponent(TextNode):
+class DayOfWeekComponent(TextNode, CarouselPanel):
     def __init__(self, font_path: str, current_time: DataResolver[float]) -> None:
         assert font_path is not None
         assert current_time is not None
