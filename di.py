@@ -1,5 +1,5 @@
 # from component.aqi import AqiComponent
-# from component.calendar import CalendarComponent
+from component.calendar import CalendarComponent
 # from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
@@ -25,7 +25,7 @@ from data.timer import TimerDataResolver
 from data.currenttime import CurrentTimeDataResolver
 from data.weather_mqtt import CurrentWeatherDataMqttResolver, WeatherForecastDataMqttResolver
 from draw import ContainerNode, CarouselDrawable
-from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
+from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent, AlignSelf
 # from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
 from pixelperfectpi import Clock
@@ -147,12 +147,17 @@ def create_clock(config: AppConfig) -> Clock:
     # #     box=lower_position_inner,
     # #     font_path=config.font_path,
     # # )
-    # calendar_component = CalendarComponent(
-    #     calendar=calendar_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     display_tz=display_tz,
-    # )
+    calendars = []
+    for i in range(3):
+        calendars.append(CalendarComponent(
+            calendar=calendar_data,
+            current_time=current_time,
+            calendar_index=i,
+            font_path=config.font_path,
+            display_tz=display_tz,
+            # flex_grow=1,
+            # align_self=AlignSelf.STRETCH,
+        ))
     # daily_weather_forecast_component = DailyWeatherForecastComponent(
     #     weather_forecast_data=weather_forecast_data,
     #     box=lower_position_inner,
@@ -307,6 +312,15 @@ def create_clock(config: AppConfig) -> Clock:
         size=(100*PCT, 100*PCT),
     )
     root.add_child(top)
+    bottom = CarouselDrawable(
+        current_time=current_time,
+        # flex_grow=1,
+        # align_items=AlignItems.STRETCH,
+        # align_self=AlignSelf.STRETCH,
+    )
+    for calendar in calendars:
+        bottom.add_panel(calendar)
+    root.add_child(bottom)
 
     # Create the clock system
     clock = Clock(

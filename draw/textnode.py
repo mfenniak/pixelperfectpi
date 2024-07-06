@@ -47,6 +47,9 @@ class TextNode(Drawable):
         if size_available_space.width.scale == Scale.POINTS:
             # Request for something with a specific width...
             max_width = size_available_space.width.value
+        elif size_available_space.width.scale == Scale.MIN_CONTENT:
+            # Return the smallest width we can support... hopefully measure_text doesn't choke on this.
+            max_width = 1
         else:
             max_width = 1024
         
@@ -112,8 +115,9 @@ class TextNode(Drawable):
                     # leave next_word in text_words and keep going
                 else:
                     # next_word by itself won't fit on a line; well, we can't skip the middle of a sentence so we'll
-                    # just consume it regardless as it's own line.  Ignore it for widest_line calc.
+                    # just consume it regardless as it's own line.
                     lines.append(next_word)
+                    widest_line = max(widest_line, right)
                     text_words = text_words[1:]
             else:
                 # yes, it will fit on the line
