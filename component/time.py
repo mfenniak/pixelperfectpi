@@ -3,6 +3,7 @@ from draw import TextNode
 from PIL import ImageColor
 from typing import Any
 import time
+from typing import TypeVar, Generic, Literal
 
 class TimeComponent(TextNode):
     def __init__(self, font_path: str, current_time: DataResolver[float]) -> None:
@@ -22,13 +23,9 @@ class TimeComponent(TextNode):
             timestr = timestr.replace(":", " ")
         return timestr
 
-    def do_draw(self) -> None:
-        self.fill((0, 0, 0))
-
+    def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
         now = self.current_time.data
         assert now is not None
-
         hue = int(now*50 % 360)
-        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
+        return ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
 
-        self.draw_text(color, self.get_text())

@@ -33,7 +33,7 @@ class Drawable(Node, Generic[T]):
         self.do_draw()
         parent_buffer.paste(self.buffer, box=(int(box.x), int(box.y)))
 
-    def fill(self, color: tuple[int, int, int]) -> None:
+    def fill(self, color: tuple[int, int, int] | tuple[int, int, int, int]) -> None:
         assert self.buffer is not None
         self.buffer.paste(color, box=(0,0,self.buffer.width,self.buffer.height))
 

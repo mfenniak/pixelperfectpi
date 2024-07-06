@@ -147,7 +147,7 @@ class MqttServer(Service):
                     if not message_handled:
                         print("Unknown message", message.topic, message.payload)
                 # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
-                messages_next = asyncio.create_task(anext(messages)) # type: ignore
+                messages_next = asyncio.create_task(anext(client.messages)) # type: ignore
 
             if status_update.done():
                 status = status_update.result()

@@ -3,7 +3,7 @@ from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
 from stretchable.style.geometry.length import Scale, LengthPoints
 from PIL import Image, ImageFont, ImageDraw
 import os.path
-from typing import TypeVar, Generic, Literal
+from typing import TypeVar, Generic, Literal, Tuple
 
 class TextNode(Drawable):
     def __init__(self, font_path: str, font: str, *args, **kwargs) -> None:
@@ -28,6 +28,16 @@ class TextNode(Drawable):
 
     def get_text(self) -> str:
         raise NotImplemented
+
+    def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+        return (0, 0, 0)
+
+    def get_text_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+        return (128, 128, 128)
+
+    def do_draw(self) -> None:
+        self.fill(self.get_background_color())
+        self.draw_text(self.get_text_color(), self.get_text())
 
     def measure_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
         text = self.get_text()

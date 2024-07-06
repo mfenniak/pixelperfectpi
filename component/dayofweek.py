@@ -20,14 +20,8 @@ class DayOfWeekComponent(TextNode, CarouselPanel):
         timestr = time.strftime("%a", time.localtime(now))
         return timestr
 
-    def do_draw(self) -> None:
-        self.fill((0, 0, 0))
-
+    def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
         now = self.current_time.data
         assert now is not None
-
-        # FIXME: color is synced to the time, but, only by copy-and-paste
         hue = int(now*50 % 360)
-        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-
-        self.draw_text(color, self.get_text())
+        return ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")

@@ -26,7 +26,3 @@ class CurrentTemperatureComponent(TextNode, CarouselPanel):
         if curr_c is None:
             return ""
         return f"{curr_c:.0f}°"
-
-    def do_draw(self) -> None:
-        self.fill((0, 0, 0))
-        self.draw_text((128,128,128), self.get_text())
