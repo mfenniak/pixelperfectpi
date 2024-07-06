@@ -115,45 +115,44 @@ class MqttServer(Service):
             qos=1, retain=True)
 
     async def process_messages_forever(self, client: Client, clock: "DisplayBase") -> None:
-        async with client.messages() as messages:
-            # Subscribe to the topic where we'll receive commands for the switch
-            cmd_topic = get_cmd_topic(self.config)
-            await client.subscribe(cmd_topic)
-            for other_receiver in self.other_receivers:
-                await other_receiver.subscribe_to_topics(client)
+        # Subscribe to the topic where we'll receive commands for the switch
+        cmd_topic = get_cmd_topic(self.config)
+        await client.subscribe(cmd_topic)
+        for other_receiver in self.other_receivers:
+            await other_receiver.subscribe_to_topics(client)
 
-            # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
-            messages_next = asyncio.create_task(anext(messages)) # type: ignore
-            status_update = asyncio.create_task(self.status_update_queue.get())
-            shutdown_wait = asyncio.create_task(self.shutdown_event.wait())
+        # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
+        messages_next = asyncio.create_task(anext(client.messages)) # type: ignore
+        status_update = asyncio.create_task(self.status_update_queue.get())
+        shutdown_wait = asyncio.create_task(self.shutdown_event.wait())
 
-            while not self.shutdown_event.is_set():
-                aws = [ messages_next, status_update, shutdown_wait ]
-                await asyncio.wait(aws, return_when=asyncio.FIRST_COMPLETED)
+        while not self.shutdown_event.is_set():
+            aws = [ messages_next, status_update, shutdown_wait ]
+            await asyncio.wait(aws, return_when=asyncio.FIRST_COMPLETED)
 
-                if messages_next.done():
-                    message = messages_next.result()
-                    if str(message.topic) == cmd_topic:
-                        cmd = message.payload.decode().upper()
-                        if cmd == "ON":
-                            await clock.turn_on()
-                        elif cmd == "OFF":
-                            await clock.turn_off()
-                    else:
-                        message_handled = False
-                        for other_receiver in self.other_receivers:
-                            if await other_receiver.handle_message(message):
-                                message_handled = True
-                                # Do not break; allow multiple receivers to handle the same message
-                        if not message_handled:
-                            print("Unknown message", message.topic, message.payload)
-                    # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
-                    messages_next = asyncio.create_task(anext(messages)) # type: ignore
+            if messages_next.done():
+                message = messages_next.result()
+                if str(message.topic) == cmd_topic:
+                    cmd = message.payload.decode().upper()
+                    if cmd == "ON":
+                        await clock.turn_on()
+                    elif cmd == "OFF":
+                        await clock.turn_off()
+                else:
+                    message_handled = False
+                    for other_receiver in self.other_receivers:
+                        if await other_receiver.handle_message(message):
+                            message_handled = True
+                            # Do not break; allow multiple receivers to handle the same message
+                    if not message_handled:
+                        print("Unknown message", message.topic, message.payload)
+                # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185
+                messages_next = asyncio.create_task(anext(messages)) # type: ignore
 
-                if status_update.done():
-                    status = status_update.result()
-                    await client.publish(get_state_topic(self.config), status, qos=1, retain=True)
-                    status_update = asyncio.create_task(self.status_update_queue.get())
+            if status_update.done():
+                status = status_update.result()
+                await client.publish(get_state_topic(self.config), status, qos=1, retain=True)
+                status_update = asyncio.create_task(self.status_update_queue.get())
 
     async def status_update(self, state: Literal["ON"] | Literal["OFF"]) -> None:
         await self.status_update_queue.put(state)
