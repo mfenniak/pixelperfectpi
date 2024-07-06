@@ -11,7 +11,7 @@ from component.dayofweek import DayOfWeekComponent
 from component.time import TimeComponent
 # from component.timer import TimerComponent
 # from component.uv_index import CurrentUvIndexComponent
-# from component.weatherforecast import DailyWeatherForecastComponent, HourlyWeatherForecastComponent
+from component.weatherforecast import DailyWeatherForecastComponent #, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
 from data.calendar import CalendarDataResolver
@@ -158,11 +158,20 @@ def create_clock(config: AppConfig) -> Clock:
             # flex_grow=1,
             # align_self=AlignSelf.STRETCH,
         ))
-    # daily_weather_forecast_component = DailyWeatherForecastComponent(
-    #     weather_forecast_data=weather_forecast_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    # )
+    daily_weather_forecast_component_today = DailyWeatherForecastComponent(
+        weather_forecast_data=weather_forecast_data,
+        offset=datetime.timedelta(days=0),
+        label="tdy",
+        # box=lower_position_inner,
+        font_path=config.font_path,
+    )
+    daily_weather_forecast_component_tomorrow = DailyWeatherForecastComponent(
+        weather_forecast_data=weather_forecast_data,
+        offset=datetime.timedelta(days=1),
+        label="tmw",
+        # box=lower_position_inner,
+        font_path=config.font_path,
+    )
     # hourly_weather_forecast_component = HourlyWeatherForecastComponent(
     #     weather_forecast_data=weather_forecast_data,
     #     display_tz=display_tz,
@@ -244,7 +253,7 @@ def create_clock(config: AppConfig) -> Clock:
     #     panels=[
     #         # aqi_component,
     #         calendar_component,
-    #         daily_weather_forecast_component,
+    #         daily_weather_forecast_component_today,
     #         hourly_weather_forecast_component,
     #         # sun_forecast_component,
     #         oven_component,
@@ -305,13 +314,7 @@ def create_clock(config: AppConfig) -> Clock:
     )
     top.add_child(top_left)
     top.add_child(time_component)
-    root = ContainerNode(
-        flex_direction=FlexDirection.COLUMN,
-        justify_content=JustifyContent.CENTER,
-        align_items=AlignItems.STRETCH,
-        size=(100*PCT, 100*PCT),
-    )
-    root.add_child(top)
+
     bottom = CarouselDrawable(
         current_time=current_time,
         # flex_grow=1,
@@ -320,6 +323,16 @@ def create_clock(config: AppConfig) -> Clock:
     )
     for calendar in calendars:
         bottom.add_panel(calendar)
+    bottom.add_panel(daily_weather_forecast_component_today)
+    bottom.add_panel(daily_weather_forecast_component_tomorrow)
+
+    root = ContainerNode(
+        size=(100*PCT, 100*PCT),
+        flex_direction=FlexDirection.COLUMN,
+        justify_content=JustifyContent.CENTER,
+        align_items=AlignItems.STRETCH,
+    )
+    root.add_child(top)
     root.add_child(bottom)
 
     # Create the clock system
@@ -327,9 +340,6 @@ def create_clock(config: AppConfig) -> Clock:
         data_resolvers=data_resolvers,
         current_time=current_time,
         root=root,
-        # time_component=time_component,
-        # current_component=current_component,
-        # lower_panels=lower_panels,
         rgbmatrix_provider=rgbmatrix_provider,
         shutdown_event=shutdown_event,
         services=[mqtt_server],

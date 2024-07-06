@@ -1,71 +1,54 @@
-# from data import WeatherForecast, WeatherForecasts, DataResolver, StaticDataResolver
-# from dataclasses import dataclass
-# from draw import DrawPanel, Box
-# from typing import Any, Iterable
-# import datetime
-# import pytz
-# import itertools
-# from stretchable import Node
-# from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
-# from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-# from stretchable.style.geometry.length import Scale, LengthPoints
+from data import WeatherForecast, WeatherForecasts, DataResolver, StaticDataResolver
+from dataclasses import dataclass
+from draw import TextNode, CarouselPanel
+from typing import Any, Iterable
+import datetime
+import pytz
+import itertools
+from stretchable import Node
+from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
+from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
+from stretchable.style.geometry.length import Scale, LengthPoints
 
-# @dataclass
-# class ForecastWithLabel:
-#     forecast: WeatherForecast
-#     label: str
+class DailyWeatherForecastComponent(TextNode, CarouselPanel):
+    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], offset: datetime.timedelta, label: str, font_path: str, **kwargs: Any) -> None:
+        super().__init__(font="4x6", font_path=font_path)
+        self.weather_forecast_data = weather_forecast_data
+        self.offset = offset
+        self.label = label
 
-# class DailyWeatherForecastComponent(DrawPanel[WeatherForecasts]):
-#     def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], box: Box, font_path: str, **kwargs: Any) -> None:
-#         super().__init__(data_resolver=weather_forecast_data, box=box, font_path=font_path)
-#         self.load_font("4x6")
+    def get_forecast(self, data: WeatherForecasts | None) -> WeatherForecast | None:
+        if data is None:
+            return None
+        now = datetime.datetime.now(tz=pytz.utc)
+        for day in data.daily:
+            if day.datetime is None:
+                continue
+            if day.datetime.date() == (now + self.offset).date():
+                return day
+        return None
 
-#     def get_today_forecast(self, data: WeatherForecasts) -> WeatherForecast | None:
-#         now = datetime.datetime.now(tz=pytz.utc)
-#         for day in data.daily:
-#             if day.datetime is None:
-#                 continue
-#             if day.datetime.date() == now.date():
-#                 return day
-#         return None
+    def is_carousel_visible(self) -> bool:
+        return self.get_forecast(self.weather_forecast_data.data) is not None
 
-#     def get_tomorrow_forecast(self, data: WeatherForecasts) -> WeatherForecast | None:
-#         now = datetime.datetime.now(tz=pytz.utc)
-#         for day in data.daily:
-#             if day.datetime is None:
-#                 continue
-#             if day.datetime.date() == (now + datetime.timedelta(days=1)).date():
-#                 return day
-#         return None
+    def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+        return (16, 0, 0)
 
-#     def get_valid_forecasts(self, data: WeatherForecasts) -> Iterable[ForecastWithLabel]:
-#         forecast = self.get_today_forecast(data)
-#         if forecast is not None:
-#             yield ForecastWithLabel(forecast, "tdy")
-#         forecast = self.get_tomorrow_forecast(data)
-#         if forecast is not None:
-#             yield ForecastWithLabel(forecast, "tmw")
+    def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
+        return (200, 200, 200)
 
-#     def frame_count(self, data: WeatherForecasts | None, now: float) -> int:
-#         if data is None:
-#             return 0
-#         return len(list(self.get_valid_forecasts(data)))
-
-#     def do_draw(self, now: float, data: WeatherForecasts | None, frame: int) -> None:
-#         self.fill((16, 0, 0))
-#         if data is None:
-#             return
-#         forecasts = list(self.get_valid_forecasts(data))
-#         # print(repr(forecasts))
-#         if frame < len(forecasts):
-#             self.draw_forecast(forecasts[frame])
-
-#     def draw_forecast(self, fwl: ForecastWithLabel) -> None:
-#         cond = fwl.forecast.condition.capitalize() if fwl.forecast.condition is not None else "Unknown"
-#         txt = f"{fwl.label}: {cond} H:{fwl.forecast.temperature_high:.0f}° L:{fwl.forecast.temperature_low:.0f}°"
-#         if fwl.forecast.precipitation is not None and fwl.forecast.precipitation > 0:
-#             txt += f" {fwl.forecast.precipitation:.0f}mm"
-#         self.draw_text((200, 200, 200), txt)
+    def get_text(self) -> str:
+        forecast = self.get_forecast(self.weather_forecast_data.data)
+        if forecast is None:
+            return "N/A"
+        cond = forecast.condition.capitalize() if forecast.condition is not None else "Unknown"
+        txt = f"{self.label}: {cond} H:{forecast.temperature_high:.0f}° L:{forecast.temperature_low:.0f}°"
+        if forecast.precipitation is not None and forecast.precipitation > 0:
+            if forecast.precipitation < 1:
+                txt += " <1mm"
+            else:
+                txt += f" {forecast.precipitation:.0f}mm"
+        return txt
 
 
 # class HourlyWeatherForecastComponent(DrawPanel[WeatherForecasts]):
