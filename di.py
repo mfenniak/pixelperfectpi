@@ -3,7 +3,7 @@ from component.calendar import CalendarComponent
 from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
-# from component.distance import DistanceComponent
+from component.distance import DistanceComponent
 # from component.door import DoorComponent
 # from component.media_player import MediaPlayerComponent
 # from component.oven import OvenOnComponent
@@ -190,22 +190,20 @@ def create_clock(config: AppConfig) -> Clock:
     #     font_path=config.font_path,
     #     icon_path=config.icon_path,
     # )
-    # distance_component_mathieu = DistanceComponent(
-    #     distance=distance_to_mathieu_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    #     label="Mathieu",
-    #     icon="runner",
-    # )
-    # distance_component_amanda = DistanceComponent(
-    #     distance=distance_to_amanda_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    #     label="Amanda",
-    #     icon="cyclist",
-    # )
+    distance_component_mathieu = DistanceComponent(
+        distance=distance_to_mathieu_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        label="Mathieu",
+        icon="runner",
+    )
+    distance_component_amanda = DistanceComponent(
+        distance=distance_to_amanda_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        label="Amanda",
+        icon="cyclist",
+    )
     # door_component_garage = DoorComponent(
     #     door=garage_door_status_data,
     #     box=lower_position_inner,
@@ -324,6 +322,8 @@ def create_clock(config: AppConfig) -> Clock:
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
     bottom.add_panel(timer_component)
     bottom.add_panel(paris_component)
+    bottom.add_panel(distance_component_mathieu)
+    bottom.add_panel(distance_component_amanda)
 
     root = ContainerNode(
         size=(100*PCT, 100*PCT),

@@ -1,28 +1,44 @@
-# from data import DistanceDataResolver, LocationDistance
-# from draw import DrawPanel, Box
-# from typing import Any
-# import pytz
-# import datetime
-# import os.path
-# from PIL import Image
+from data import TimerDataResolver, TimerState, DistanceDataResolver
+from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from typing import Any
+from PIL import ImageColor
+import pytz
+import datetime
+from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
+from stretchable.style.geometry.length import Scale, LengthPoints
 
-# class DistanceComponent(DrawPanel[LocationDistance]):
-#     def __init__(self, distance: DistanceDataResolver, box: Box, font_path: str, icon_path: str, label: str, icon: str) -> None:
-#         super().__init__(data_resolver=distance, box=box, font_path=font_path)
-#         self.load_font("5x8")
-#         self.icon = Image.open(os.path.join(icon_path, f"{icon}.png"))
-#         self.label = label
+class DistanceComponent(ContainerNode, CarouselPanel):
+    def __init__(self, distance: DistanceDataResolver, font_path: str, icon_path: str, label: str, icon: str) -> None:
+        super().__init__()
+        self.distance = distance
+        self.label = label
+        self.add_child(self.DistanceIcon(icon_path, icon))
+        self.add_child(self.DistanceText(distance, font_path, label))
 
-#     def frame_count(self, data: LocationDistance | None, now: float) -> int:
-#         if data is None:
-#             return 0
-#         if data.distance < 0.25:
-#             return 0
-#         return 1
+    def is_carousel_visible(self) -> bool:
+        if self.distance.data is None:
+            return False
+        if self.distance.data.distance < 0.25:
+            return False
+        return True
 
-#     def do_draw(self, now: float, data: LocationDistance | None, frame: int) -> None:
-#         if data is None:
-#             return
-#         self.fill((64, 64, 64))
-#         self.draw_icon(self.icon)
-#         self.draw_text((255, 255, 0), f"{self.label} - {data.distance:.1f}km", pad_left=self.icon.width)
+    class DistanceIcon(IconNode):
+        def __init__(self, icon_path: str, icon: str) -> None:
+            super().__init__(icon_path=icon_path, icon_file=f"{icon}.png", background_color=(64, 64, 64))
+
+    class DistanceText(TextNode):
+        def __init__(self, distance: DistanceDataResolver, font_path: str, label: str) -> None:
+            super().__init__(font="5x8", font_path=font_path)
+            self.distance = distance
+            self.label = label
+
+        def get_background_color(self) -> tuple[int, int, int]:
+            return (64, 64, 64)
+
+        def get_text_color(self) -> tuple[int, int, int]:
+            return (255, 255, 0)
+
+        def get_text(self) -> str:
+            if self.distance.data is None:
+                return ""
+            return f"{self.label} - {self.distance.data.distance:.1f}km"
