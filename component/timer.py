@@ -1,45 +1,57 @@
-# from data import TimerDataResolver, TimerInformation, TimerState
-# from draw import DrawPanel, Box
-# from typing import Any
-# import pytz
-# import datetime
-# import os.path
-# from PIL import Image
+from data import TimerDataResolver, TimerState
+from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from typing import Any
+from PIL import ImageColor
+import pytz
+import datetime
+from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
+from stretchable.style.geometry.length import Scale, LengthPoints
 
-# class TimerComponent(DrawPanel[TimerInformation]):
-#     def __init__(self, timer: TimerDataResolver, box: Box, font_path: str, icon_path: str) -> None:
-#         super().__init__(data_resolver=timer, box=box, font_path=font_path)
-#         self.load_font("5x8")
-#         self.icon = Image.open(os.path.join(icon_path, "timer.png"))
+class TimerComponent(ContainerNode, CarouselPanel):
+    def __init__(self, timer: TimerDataResolver, font_path: str, icon_path: str) -> None:
+        super().__init__()
+        self.timer = timer
+        self.add_child(self.TimerIcon(icon_path))
+        self.add_child(self.TimerText(timer, font_path))
 
-#     def frame_count(self, data: TimerInformation | None, now: float) -> int:
-#         if data is None:
-#             return 0
-#         if data.state not in (TimerState.RUNNING, TimerState.PAUSED):
-#             return 0
-#         if data.state == TimerState.RUNNING and data.finishes_at is not None and data.finishes_at < datetime.datetime.now(pytz.utc):
-#             return 0
-#         return 1
+    def is_carousel_visible(self) -> bool:
+        if self.timer.data is None:
+            return False
+        if self.timer.data.state not in (TimerState.RUNNING, TimerState.PAUSED):
+            return False
+        if self.timer.data.state == TimerState.RUNNING and self.timer.data.finishes_at is not None and self.timer.data.finishes_at < datetime.datetime.now(pytz.utc):
+            return False
+        return True
 
-#     def do_draw(self, now: float, data: TimerInformation | None, frame: int) -> None:
-#         if data is None:
-#             return
-#         self.fill((37, 37, 14))
-#         text_color = (245, 191, 0)
-#         self.draw_icon(self.icon)
-#         if data.state == TimerState.RUNNING:
-#             if data.finishes_at is None:
-#                 return
-#             # Calculate the remaining time
-#             remaining = data.finishes_at - datetime.datetime.now(pytz.utc)
-#             remaining_minutes = int(remaining.total_seconds() / 60)
-#             remaining_seconds = int(remaining.total_seconds() % 60)
-#             self.draw_text(text_color, f"Timer {remaining_minutes}:{remaining_seconds:02}", pad_left=self.icon.width)
-#         else:
-#             if data.remaining is None:
-#                 return
-#             remaining = data.remaining
-#             remaining_minutes = int(remaining.total_seconds() / 60)
-#             remaining_seconds = int(remaining.total_seconds() % 60)
-#             self.draw_text(text_color, f"Paused {remaining_minutes}:{remaining_seconds:02}", pad_left=self.icon.width)
+    class TimerIcon(IconNode):
+        def __init__(self, icon_path: str) -> None:
+            super().__init__(icon_path=icon_path, icon_file="timer.png", background_color=(37, 37, 14))
 
+    class TimerText(TextNode):
+        def __init__(self, timer: TimerDataResolver, font_path: str) -> None:
+            super().__init__(font="5x8", font_path=font_path)
+            self.timer = timer
+
+        def get_background_color(self) -> tuple[int, int, int]:
+            return (37, 37, 14)
+
+        def get_text_color(self) -> tuple[int, int, int]:
+            return (245, 191, 0)
+        
+        def get_text(self) -> str:
+            if self.timer.data is None:
+                return ""
+            if self.timer.data.state == TimerState.RUNNING:
+                if self.timer.data.finishes_at is None:
+                    return ""
+                remaining = self.timer.data.finishes_at - datetime.datetime.now(pytz.utc)
+                remaining_minutes = int(remaining.total_seconds() / 60)
+                remaining_seconds = int(remaining.total_seconds() % 60)
+                return f"Timer {remaining_minutes}:{remaining_seconds:02}"
+            else:
+                if self.timer.data.remaining is None:
+                    return ""
+                remaining = self.timer.data.remaining
+                remaining_minutes = int(remaining.total_seconds() / 60)
+                remaining_seconds = int(remaining.total_seconds() % 60)
+                return f"Paused {remaining_minutes}:{remaining_seconds:02}"

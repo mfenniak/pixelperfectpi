@@ -9,8 +9,7 @@ from component.dayofweek import DayOfWeekComponent
 # from component.oven import OvenOnComponent
 # from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
-# from component.timer import TimerComponent
-# from component.uv_index import CurrentUvIndexComponent
+from component.timer import TimerComponent
 from component.weatherforecast import DailyWeatherForecastComponent #, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
@@ -234,12 +233,11 @@ def create_clock(config: AppConfig) -> Clock:
     #     font_path=config.font_path,
     #     icon_path=config.icon_path,
     # )
-    # timer_component = TimerComponent(
-    #     timer=timer_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    # )
+    timer_component = TimerComponent(
+        timer=timer_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     # paris_component = CountdownComponent(
     #     display_tz=display_tz,
     #     target_date=pytz.timezone("America/Edmonton").localize(datetime.datetime(2024, 6, 28, 19, 40, 0)),
@@ -325,6 +323,7 @@ def create_clock(config: AppConfig) -> Clock:
         bottom.add_panel(calendar)
     bottom.add_panel(daily_weather_forecast_component_today)
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
+    bottom.add_panel(timer_component)
 
     root = ContainerNode(
         size=(100*PCT, 100*PCT),

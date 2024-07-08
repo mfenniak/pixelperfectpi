@@ -27,13 +27,6 @@ class CalendarComponent(TextNode, CarouselPanel):
     def is_carousel_visible(self) -> bool:
         return self.my_event() is not None
 
-    # def measure_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
-    #     text = self.get_text()
-    #     retval = super().measure_node(size_points, size_available_space)
-    #     print(f"CalendarComponent.measure_node({size_points}, {size_available_space}) -> {retval}")
-    #     print(f"  text: {text}")
-    #     return retval
-
     def get_text(self) -> str:
         event = self.my_event()
         if event is None:
