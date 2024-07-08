@@ -1,6 +1,6 @@
 # from component.aqi import AqiComponent
 from component.calendar import CalendarComponent
-# from component.countdown import CountdownComponent
+from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 # from component.distance import DistanceComponent
@@ -238,13 +238,12 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
-    # paris_component = CountdownComponent(
-    #     display_tz=display_tz,
-    #     target_date=pytz.timezone("America/Edmonton").localize(datetime.datetime(2024, 6, 28, 19, 40, 0)),
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    # )
+    paris_component = CountdownComponent(
+        current_time=current_time,
+        target_date=pytz.timezone("Europe/Paris").localize(datetime.datetime(2024, 7, 19, 8, 35, 0)),
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
 
     # # Create panels
     # lower_panels = MultiPanelPanel(
@@ -324,6 +323,7 @@ def create_clock(config: AppConfig) -> Clock:
     bottom.add_panel(daily_weather_forecast_component_today)
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
     bottom.add_panel(timer_component)
+    bottom.add_panel(paris_component)
 
     root = ContainerNode(
         size=(100*PCT, 100*PCT),
