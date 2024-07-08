@@ -5,9 +5,11 @@ from typing import Literal
 Orientation = Literal["horizontal", "vertical"]
 
 class BarChart(Drawable):
-    def __init__(self, orientation: Orientation, *args, **kwargs) -> None:
+    def __init__(self, orientation: Orientation, border: int = 0, border_color: tuple[int, int, int] = (0, 0, 0), *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.orientation = orientation
+        self.border = border
+        self.border_color = border_color
 
     def min_value(self) -> float:
         raise NotImplementedError
@@ -42,6 +44,8 @@ class BarChart(Drawable):
         assert self.buffer is not None
 
         self.fill((0, 0, 0))
+        for i in range(0, self.border):
+            self.rect(self.border_color, i, i, self.buffer.width - i * 2, self.buffer.height - i * 2)
 
         my_min, my_max = self.min_value(), self.max_value()
         my_value = self.value()
@@ -49,8 +53,8 @@ class BarChart(Drawable):
             return
 
         box = self.get_box(relative=True)
-        width = int(box.width)
-        height = int(box.height)
+        width = int(box.width) - (self.border * 2)
+        height = int(box.height) - (self.border * 2)
 
         if self.orientation == "horizontal":
             for x in range(0, width):
@@ -59,13 +63,16 @@ class BarChart(Drawable):
                     break
                 color = self.interpolate_color(value_x)
                 for y in range(0, height):
-                    self.buffer.putpixel((x, y), color)
+                    self.buffer.putpixel((self.border + x, self.border + y), color)
         elif self.orientation == "vertical":
             for y in range(0, height):
+                # print(f"{y=}")
                 value_y = (y / height) * (my_max - my_min)
+                y_coord = height - y
+                # print(f"{y=} {height=} {value_y=} {y_coord=} {my_value=}")
                 if value_y > my_value:
                     break
                 color = self.interpolate_color(value_y)
                 for x in range(0, width):
-                    self.buffer.putpixel((x, height - y - 1), color)
-
+                    # print(self.border + x, height - y - 1)
+                    self.buffer.putpixel((self.border + x, height - y), color)

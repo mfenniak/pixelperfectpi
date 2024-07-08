@@ -32,3 +32,10 @@ class Drawable(Node, Generic[T]):
     def fill(self, color: tuple[int, int, int] | tuple[int, int, int, int]) -> None:
         assert self.buffer is not None
         self.buffer.paste(color, box=(0,0,self.buffer.width,self.buffer.height))
+
+    def rect(self, color: tuple[int, int, int], x: int, y: int, width: int, height) -> None:
+        if width == 0 or height == 0:
+            return
+        # imagedraw rectangle is inclusive on both sides; the -1 is required to make
+        # the width/height of the rectangle correct
+        self.imagedraw.rectangle((x, y, x+width-1, y+height-1), outline=color)
