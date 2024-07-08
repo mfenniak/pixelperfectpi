@@ -1,5 +1,5 @@
 from data import DataResolver, CurrentWeatherData
-from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from draw import TextNode, CarouselPanel, ContainerNode, IconNode, BarChart
 from typing import Any
 from PIL import ImageColor
 import pytz
@@ -12,7 +12,7 @@ class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
         super().__init__()
         self.data_resolver = data_resolver
         self.add_child(self.UvTextComponent(data_resolver, font_path))
-        # self.add_child(self.UvGraphComponent(data_resolver, box))
+        self.add_child(self.UvGraphComponent(data_resolver))
 
     def is_carousel_visible(self) -> bool:
         if self.data_resolver.data is None:
@@ -37,49 +37,27 @@ class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
                 return ""
             return f"UV {self.data_resolver.data.uv}"
 
-    # class UvGraphComponent(DrawPanel[CurrentWeatherData]):
-    #     def __init__(self, data_resolver: DataResolver[CurrentWeatherData], box: Box) -> None:
-    #         super().__init__(data_resolver=data_resolver, box=box, font_path=None)
+    class UvGraphComponent(BarChart):
+        def __init__(self, data_resolver: DataResolver[CurrentWeatherData]) -> None:
+            super().__init__(orientation="vertical", size=(3, 10))
+            self.data_resolver = data_resolver
 
-    #     def frame_count(self, data: CurrentWeatherData | None, now: float) -> int:
-    #         if data is None:
-    #             return 0
-    #         else:
-    #             return 1
+        def min_value(self) -> float:
+            return 0
+        
+        def max_value(self) -> float:
+            return 10
 
-    #     def do_draw(self, now: float, data: CurrentWeatherData | None, frame: int) -> None:
-    #         self.fill((0, 0, 0))
-    #         if data is None or data.uv is None:
-    #             return
+        def value(self) -> float | None:
+            if self.data_resolver.data is None:
+                return None
+            return self.data_resolver.data.uv
 
-    #         for i in range(0, data.uv):
-    #             color = self.interpolate_color(i)
-    #             row = self.h - i - 1
-    #             if row < 0:
-    #                 break
-    #             for x in range(0, self.w):
-    #                 self.set_pixel(x, row, color)
-
-    #     def interpolate_color(self, uv_index: int) -> tuple[int, int, int]:
-    #         def lerp_color(start_color, end_color, t):
-    #             return (
-    #                 int(start_color[0] + (end_color[0] - start_color[0]) * t),
-    #                 int(start_color[1] + (end_color[1] - start_color[1]) * t),
-    #                 int(start_color[2] + (end_color[2] - start_color[2]) * t)
-    #             )
-
-    #         uv_colors = [
-    #             (0, (0, 255, 0)),   # Green
-    #             (3, (255, 255, 0)), # Yellow
-    #             (6, (255, 165, 0)), # Orange
-    #             (8, (255, 0, 0)),   # Red
-    #             (10, (255, 0, 255)) # Fuschia
-    #         ]
-    #         prev = uv_colors[0]
-    #         for uv, color in uv_colors:
-    #             if uv_index <= uv:
-    #                 if uv == uv_index:
-    #                     return color
-    #                 return lerp_color(prev[1], color, (uv_index - prev[0]) / (uv - prev[0]))
-    #             prev = uv, color
-    #         return prev[1]
+        def color_scale(self) -> list[tuple[float, tuple[int, int, int]]]:
+            return [
+                (0, (0, 255, 0)),   # Green
+                (3, (255, 255, 0)), # Yellow
+                (6, (255, 165, 0)), # Orange
+                (8, (255, 0, 0)),   # Red
+                (10, (255, 0, 255)) # Fuschia
+            ]
