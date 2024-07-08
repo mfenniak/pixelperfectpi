@@ -1,11 +1,15 @@
 from data import DoorDataResolver, DoorStatus
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from stretchable.style import AlignItems
 import datetime
 import pytz
 
 class DoorComponent(ContainerNode, CarouselPanel):
     def __init__(self, door: DoorDataResolver, font_path: str, icon_path: str, name: str) -> None:
-        super().__init__()
+        super().__init__(
+            flex_grow=1,
+            align_items=AlignItems.CENTER,
+        )
         self.door = door
         self.name = name
         self.just_changed_timeframe = datetime.timedelta(seconds=10)

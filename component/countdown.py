@@ -7,7 +7,10 @@ import pytz
 
 class CountdownComponent(ContainerNode, CarouselPanel):
     def __init__(self, current_time: DataResolver[float], target_date: datetime, font_path: str, icon_path: str, **kwargs: Any) -> None:
-        super().__init__()
+        super().__init__(
+            flex_grow=1,
+            align_items=AlignItems.CENTER,
+        )
         self.current_time = current_time
         self.target_date = target_date
         self.add_child(self.CountdownIcon(icon_path))

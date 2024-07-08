@@ -7,7 +7,7 @@ import pytz
 
 class CalendarComponent(TextNode, CarouselPanel):
     def __init__(self, calendar: CalendarDataResolver, current_time: DataResolver[float], display_tz: pytz.BaseTzInfo, font_path: str, calendar_index: int, **kwargs: Any) -> None:
-        super().__init__(font="4x6", font_path=font_path)
+        super().__init__(font="4x6", font_path=font_path, flex_grow=1, **kwargs)
         self.calendar = calendar
         self.current_time = current_time
         self.display_tz = display_tz

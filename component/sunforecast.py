@@ -6,7 +6,7 @@ import pytz
 
 class SunForecastComponent(TextNode, CarouselPanel):
     def __init__(self, env_canada: DataResolver[SunForecast], display_tz: pytz.BaseTzInfo, font_path: str, **kwargs: Any) -> None:
-        super().__init__(font="5x8", font_path=font_path)
+        super().__init__(font="5x8", font_path=font_path, flex_grow=1, **kwargs)
         self.env_canada = env_canada
         self.display_tz = display_tz
 

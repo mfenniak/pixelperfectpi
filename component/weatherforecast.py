@@ -6,7 +6,7 @@ import pytz
 
 class DailyWeatherForecastComponent(TextNode, CarouselPanel):
     def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], offset: datetime.timedelta, label: str, font_path: str, **kwargs: Any) -> None:
-        super().__init__(font="4x6", font_path=font_path)
+        super().__init__(font="4x6", font_path=font_path, flex_grow=1, **kwargs)
         self.weather_forecast_data = weather_forecast_data
         self.offset = offset
         self.label = label

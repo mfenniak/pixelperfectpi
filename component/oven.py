@@ -1,9 +1,13 @@
 from data import OvenOnDataResolver, OvenStatus
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from stretchable.style import AlignItems
 
 class OvenOnComponent(ContainerNode, CarouselPanel):
     def __init__(self, oven_on: OvenOnDataResolver, font_path: str, icon_path: str) -> None:
-        super().__init__()
+        super().__init__(
+            flex_grow=1,
+            align_items=AlignItems.CENTER,
+        )
         self.oven_on = oven_on
         self.add_child(self.OvenOnIcon(icon_path))
         self.add_child(self.OvenOnText(oven_on, font_path))

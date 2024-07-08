@@ -1,9 +1,13 @@
 from data import DistanceDataResolver
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from stretchable.style import AlignItems
 
 class DistanceComponent(ContainerNode, CarouselPanel):
     def __init__(self, distance: DistanceDataResolver, font_path: str, icon_path: str, label: str, icon: str) -> None:
-        super().__init__()
+        super().__init__(
+            flex_grow=1,
+            align_items=AlignItems.CENTER,
+        )
         self.distance = distance
         self.label = label
         self.add_child(self.DistanceIcon(icon_path, icon))

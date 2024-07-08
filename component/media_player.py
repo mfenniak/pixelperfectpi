@@ -1,9 +1,13 @@
 from data import MediaPlayerDataResolver, MediaPlayerState
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from stretchable.style import AlignItems
 
 class MediaPlayerComponent(ContainerNode, CarouselPanel):
     def __init__(self, media_player: MediaPlayerDataResolver, font_path: str, icon_path: str) -> None:
-        super().__init__()
+        super().__init__(
+            flex_grow=1,
+            align_items=AlignItems.CENTER,
+        )
         self.media_player = media_player
         self.add_child(self.MediaPlayerIcon(icon_path))
         self.add_child(self.MediaPlayerText(media_player, font_path))

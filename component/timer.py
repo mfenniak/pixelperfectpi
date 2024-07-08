@@ -1,11 +1,15 @@
 from data import TimerDataResolver, TimerState
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
+from stretchable.style import AlignItems
 import datetime
 import pytz
 
 class TimerComponent(ContainerNode, CarouselPanel):
     def __init__(self, timer: TimerDataResolver, font_path: str, icon_path: str) -> None:
-        super().__init__()
+        super().__init__(
+            flex_grow=1,
+            align_items=AlignItems.CENTER,
+        )
         self.timer = timer
         self.add_child(self.TimerIcon(icon_path))
         self.add_child(self.TimerText(timer, font_path))

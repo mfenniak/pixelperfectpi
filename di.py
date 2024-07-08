@@ -1,4 +1,6 @@
 # from component.aqi import AqiComponent
+# from component.sunforecast import SunForecastComponent
+# from draw import MultiPanelPanel
 from component.calendar import CalendarComponent
 from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
@@ -7,14 +9,14 @@ from component.distance import DistanceComponent
 from component.door import DoorComponent
 from component.media_player import MediaPlayerComponent
 from component.oven import OvenOnComponent
-# from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
-from component.weatherforecast import DailyWeatherForecastComponent #, HourlyWeatherForecastComponent
 from component.uv_index import CurrentUvIndexComponent
+from component.weatherforecast import DailyWeatherForecastComponent #, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
 from data.calendar import CalendarDataResolver
+from data.currenttime import CurrentTimeDataResolver
 from data.distance import DistanceDataResolver
 from data.door import DoorDataResolver
 from data.envcanada import EnvironmentCanadaDataResolver
@@ -22,13 +24,11 @@ from data.media_player import MediaPlayerDataResolver
 from data.ovenpower import OvenOnDataResolver
 from data.purpleair import PurpleAirDataResolver
 from data.timer import TimerDataResolver
-from data.currenttime import CurrentTimeDataResolver
 from data.weather_mqtt import CurrentWeatherDataMqttResolver, WeatherForecastDataMqttResolver
 from draw import ContainerNode, CarouselDrawable
-from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent, AlignSelf
-# from draw import MultiPanelPanel
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
 from pixelperfectpi import Clock
+from stretchable.style import PCT, FlexDirection, AlignItems, JustifyContent
 from typing import List
 import asyncio
 import datetime
@@ -308,9 +308,8 @@ def create_clock(config: AppConfig) -> Clock:
 
     bottom = CarouselDrawable(
         current_time=current_time,
-        # flex_grow=1,
-        # align_items=AlignItems.STRETCH,
-        # align_self=AlignSelf.STRETCH,
+        flex_grow=1,
+        align_items=AlignItems.CENTER,
     )
     for calendar in calendars:
         bottom.add_panel(calendar)
