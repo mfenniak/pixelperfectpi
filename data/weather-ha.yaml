@@ -28,11 +28,11 @@ action:
         {
           "current": {
             "condition": "{{ states.weather.suresnes.state }}",
-            "temperature": {{ state_attr('weather.suresnes', 'temperature') }},
-            "humidity": {{ state_attr('weather.suresnes', 'humidity') }},
-            "pressure": {{ state_attr('weather.suresnes', 'pressure') }},
-            "wind_bearing": {{ state_attr('weather.suresnes', 'wind_bearing') }},
-            "wind_speed": {{ state_attr('weather.suresnes', 'wind_speed') }},
+            "temperature": {{ state_attr('weather.suresnes', 'temperature') if state_attr('weather.suresnes', 'temperature') is not none else 'null' }},
+            "humidity": {{ state_attr('weather.suresnes', 'humidity') if state_attr('weather.suresnes', 'humidity') is not none else 'null' }},
+            "pressure": {{ state_attr('weather.suresnes', 'pressure') if state_attr('weather.suresnes', 'pressure') is not none else 'null' }},
+            "wind_bearing": {{ state_attr('weather.suresnes', 'wind_bearing') if state_attr('weather.suresnes', 'wind_bearing') is not none else 'null' }},
+            "wind_speed": {{ state_attr('weather.suresnes', 'wind_speed') if state_attr('weather.suresnes', 'wind_speed') is not none else 'null' }},
             "uv": {{ states.sensor.suresnes_uv.state }}
           },
           "forecasts": {
