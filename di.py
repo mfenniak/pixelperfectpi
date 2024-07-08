@@ -4,13 +4,14 @@ from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 from component.distance import DistanceComponent
-# from component.door import DoorComponent
-# from component.media_player import MediaPlayerComponent
-# from component.oven import OvenOnComponent
+from component.door import DoorComponent
+from component.media_player import MediaPlayerComponent
+from component.oven import OvenOnComponent
 # from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
 from component.weatherforecast import DailyWeatherForecastComponent #, HourlyWeatherForecastComponent
+from component.uv_index import CurrentUvIndexComponent
 from config import AppConfig
 from data import DataResolver
 from data.calendar import CalendarDataResolver
@@ -120,11 +121,10 @@ def create_clock(config: AppConfig) -> Clock:
         data_resolver=current_weather,
         font_path=config.font_path,
     )
-    # uv_index_component = CurrentUvIndexComponent(
-    #     box=current_position,
-    #     data_resolver=current_weather,
-    #     font_path=config.font_path,
-    # )
+    uv_index_component = CurrentUvIndexComponent(
+        data_resolver=current_weather,
+        font_path=config.font_path,
+    )
     day_of_week_component = DayOfWeekComponent(
         font_path=config.font_path,
         current_time=current_time,
@@ -184,12 +184,11 @@ def create_clock(config: AppConfig) -> Clock:
     # #     font_path=config.font_path,
     # #     display_tz=display_tz,
     # # )
-    # oven_component = OvenOnComponent(
-    #     oven_on=oven_on_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    # )
+    oven_component = OvenOnComponent(
+        oven_on=oven_on_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     distance_component_mathieu = DistanceComponent(
         distance=distance_to_mathieu_data,
         font_path=config.font_path,
@@ -204,33 +203,29 @@ def create_clock(config: AppConfig) -> Clock:
         label="Amanda",
         icon="cyclist",
     )
-    # door_component_garage = DoorComponent(
-    #     door=garage_door_status_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    #     name="Garage",
-    # )
-    # door_component_man = DoorComponent(
-    #     door=garage_man_door_status_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    #     name="Man Door",
-    # )
-    # door_component_back = DoorComponent(
-    #     door=back_door_status_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    #     name="Back Door",
-    # )
-    # media_player_component = MediaPlayerComponent(
-    #     media_player=media_player_data,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     icon_path=config.icon_path,
-    # )
+    door_component_garage = DoorComponent(
+        door=garage_door_status_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        name="Garage",
+    )
+    door_component_man = DoorComponent(
+        door=garage_man_door_status_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        name="Man Door",
+    )
+    door_component_back = DoorComponent(
+        door=back_door_status_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+        name="Back Door",
+    )
+    media_player_component = MediaPlayerComponent(
+        media_player=media_player_data,
+        font_path=config.font_path,
+        icon_path=config.icon_path,
+    )
     timer_component = TimerComponent(
         timer=timer_data,
         font_path=config.font_path,
@@ -302,6 +297,7 @@ def create_clock(config: AppConfig) -> Clock:
     top_left = CarouselDrawable(current_time=current_time)
     top_left.add_panel(day_of_week_component)
     top_left.add_panel(current_temperature_component)
+    top_left.add_panel(uv_index_component)
     top = ContainerNode(
         flex_direction=FlexDirection.ROW,
         justify_content=JustifyContent.SPACE_BETWEEN,
@@ -320,10 +316,15 @@ def create_clock(config: AppConfig) -> Clock:
         bottom.add_panel(calendar)
     bottom.add_panel(daily_weather_forecast_component_today)
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
-    bottom.add_panel(timer_component)
-    bottom.add_panel(paris_component)
-    bottom.add_panel(distance_component_mathieu)
     bottom.add_panel(distance_component_amanda)
+    bottom.add_panel(distance_component_mathieu)
+    bottom.add_panel(door_component_back)
+    bottom.add_panel(door_component_garage)
+    bottom.add_panel(door_component_man)
+    bottom.add_panel(media_player_component)
+    bottom.add_panel(oven_component)
+    bottom.add_panel(paris_component)
+    bottom.add_panel(timer_component)
 
     root = ContainerNode(
         size=(100*PCT, 100*PCT),
