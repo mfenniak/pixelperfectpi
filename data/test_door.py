@@ -1,10 +1,9 @@
-from .door import DoorDataResolver, DoorStatus, DoorInformation
+from .door import DoorDataResolver, DoorStatus
 from aiomqtt import Client, Message
 from unittest.mock import Mock
 import datetime
 import json
 import pytest
-import pytz
 
 # Fixture for mock client
 @pytest.fixture

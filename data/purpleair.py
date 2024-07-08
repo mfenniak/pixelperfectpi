@@ -1,4 +1,3 @@
-from .weather import CurrentWeatherData
 from .resolver import ScheduledDataResolver
 from typing import Any
 import aiohttp

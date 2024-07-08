@@ -1,11 +1,5 @@
 from data import DataResolver, CurrentWeatherData
-from draw import TextNode, CarouselPanel, ContainerNode, IconNode, BarChart
-from typing import Any
-from PIL import ImageColor
-import pytz
-import datetime
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
+from draw import TextNode, CarouselPanel, ContainerNode, BarChart
 
 class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
     def __init__(self, data_resolver: DataResolver[CurrentWeatherData], font_path: str) -> None:

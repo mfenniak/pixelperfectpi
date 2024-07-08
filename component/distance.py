@@ -1,11 +1,5 @@
-from data import TimerDataResolver, TimerState, DistanceDataResolver
+from data import DistanceDataResolver
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
-from typing import Any
-from PIL import ImageColor
-import pytz
-import datetime
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
 
 class DistanceComponent(ContainerNode, CarouselPanel):
     def __init__(self, distance: DistanceDataResolver, font_path: str, icon_path: str, label: str, icon: str) -> None:

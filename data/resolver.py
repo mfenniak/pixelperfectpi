@@ -1,7 +1,7 @@
-import asyncio
-import traceback
-import random
 from typing import TypeVar, Generic
+import asyncio
+import random
+import traceback
 
 T = TypeVar('T')
 

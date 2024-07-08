@@ -1,6 +1,6 @@
-from .distance import DistanceDataResolver, LocationDistance, haversine_distance
+from .distance import DistanceDataResolver, haversine_distance
 from aiomqtt import Client, Message
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 import json
 import pytest
 

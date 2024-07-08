@@ -1,9 +1,5 @@
 from .drawpanel import Drawable
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
-from PIL import Image, ImageFont, ImageDraw
-import os.path
-from typing import TypeVar, Generic, Literal, Tuple
+from typing import Literal
 
 # horizontal or vertical enum
 Orientation = Literal["horizontal", "vertical"]

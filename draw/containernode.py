@@ -1,6 +1,5 @@
-from stretchable import Node
 from .drawpanel import Drawable
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image
 from typing import List
 
 class ContainerNode(Drawable):

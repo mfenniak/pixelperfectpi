@@ -1,9 +1,7 @@
 from data import DataResolver
 from draw import TextNode
 from PIL import ImageColor
-from typing import Any
 import time
-from typing import TypeVar, Generic, Literal
 
 class TimeComponent(TextNode):
     def __init__(self, font_path: str, current_time: DataResolver[float]) -> None:

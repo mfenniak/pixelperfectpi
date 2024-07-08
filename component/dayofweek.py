@@ -1,7 +1,6 @@
 from data import DataResolver
 from draw import TextNode, CarouselPanel
 from PIL import ImageColor
-from typing import Any
 import time
 
 class DayOfWeekComponent(TextNode, CarouselPanel):

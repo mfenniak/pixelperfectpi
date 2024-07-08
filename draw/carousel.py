@@ -1,7 +1,6 @@
-from data import DataResolver
 from .drawpanel import Drawable
+from data import DataResolver
 from typing import List
-from stretchable import Node
 
 class CarouselPanel(object):
     def get_drawable(self) -> Drawable:

@@ -1,15 +1,13 @@
 # Weather data resolver that is read from MQTT; eg. provided by Home Assistant.
 # Example HA automation: see weather-ha.yml
 
-from dataclasses import dataclass
-from typing import Any, Dict
-import json
-import datetime
-import pytz
+from .resolver import DataResolver
+from .weather import CurrentWeatherData, WeatherForecasts, WeatherForecast
 from aiomqtt import Client, Message
 from mqtt import MqttMessageReceiver
-from .weather import CurrentWeatherData, WeatherForecasts, WeatherForecast
-from .resolver import DataResolver
+from typing import Any, Dict
+import datetime
+import json
 
 class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessageReceiver):
     def __init__(self, topic: str) -> None:

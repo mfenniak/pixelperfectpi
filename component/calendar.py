@@ -1,11 +1,9 @@
 from data import CalendarDataResolver, DataResolver
 from draw import TextNode, CarouselPanel
-from typing import Any
 from PIL import ImageColor
-import pytz
+from typing import Any
 import datetime
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
+import pytz
 
 class CalendarComponent(TextNode, CarouselPanel):
     def __init__(self, calendar: CalendarDataResolver, current_time: DataResolver[float], display_tz: pytz.BaseTzInfo, font_path: str, calendar_index: int, **kwargs: Any) -> None:

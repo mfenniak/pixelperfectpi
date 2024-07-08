@@ -1,4 +1,4 @@
-from .timer import TimerDataResolver, TimerState, TimerInformation
+from .timer import TimerDataResolver, TimerState
 from aiomqtt import Client, Message
 from unittest.mock import Mock
 import datetime

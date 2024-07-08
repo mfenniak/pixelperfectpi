@@ -1,9 +1,5 @@
 from .resolver import DataResolver
-from .weather import WeatherForecasts
 from lxml import etree # type: ignore
-from typing import Any
-import aiohttp
-import datetime
 import time
 
 class CurrentTimeDataResolver(DataResolver[float]):

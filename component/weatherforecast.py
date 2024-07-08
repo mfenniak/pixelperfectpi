@@ -1,14 +1,8 @@
-from data import WeatherForecast, WeatherForecasts, DataResolver, StaticDataResolver
-from dataclasses import dataclass
+from data import WeatherForecast, WeatherForecasts, DataResolver
 from draw import TextNode, CarouselPanel
-from typing import Any, Iterable
+from typing import Any
 import datetime
 import pytz
-import itertools
-from stretchable import Node
-from stretchable.style import PCT, AUTO, FlexDirection, AlignItems, AlignContent, JustifyContent
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
 
 class DailyWeatherForecastComponent(TextNode, CarouselPanel):
     def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], offset: datetime.timedelta, label: str, font_path: str, **kwargs: Any) -> None:

@@ -1,9 +1,6 @@
 from data import DataResolver
 from data.weather import CurrentWeatherData
 from draw import TextNode, CarouselPanel
-from PIL import ImageColor
-from typing import Any
-import time
 
 class CurrentTemperatureComponent(TextNode, CarouselPanel):
     def __init__(self, font_path: str, data_resolver: DataResolver[CurrentWeatherData]) -> None:

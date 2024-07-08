@@ -1,9 +1,9 @@
 from .drawpanel import Drawable
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
 from PIL import Image, ImageFont, ImageDraw
+from stretchable.style.geometry.length import Scale, LengthPoints
+from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
+from typing import Literal
 import os.path
-from typing import TypeVar, Generic, Literal, Tuple
 
 class TextNode(Drawable):
     def __init__(self, font_path: str, font: str, *args, **kwargs) -> None:

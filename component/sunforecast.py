@@ -1,8 +1,8 @@
 from data import DataResolver, SunForecast
 from draw import TextNode, CarouselPanel
 from typing import Any, Literal
-import pytz
 import datetime
+import pytz
 
 class SunForecastComponent(TextNode, CarouselPanel):
     def __init__(self, env_canada: DataResolver[SunForecast], display_tz: pytz.BaseTzInfo, font_path: str, **kwargs: Any) -> None:

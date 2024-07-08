@@ -1,11 +1,7 @@
-from data import TimerDataResolver, TimerState, DoorDataResolver, DoorStatus
+from data import DoorDataResolver, DoorStatus
 from draw import TextNode, CarouselPanel, ContainerNode, IconNode
-from typing import Any
-from PIL import ImageColor
-import pytz
 import datetime
-from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from stretchable.style.geometry.length import Scale, LengthPoints
+import pytz
 
 class DoorComponent(ContainerNode, CarouselPanel):
     def __init__(self, door: DoorDataResolver, font_path: str, icon_path: str, name: str) -> None:
