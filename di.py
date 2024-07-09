@@ -1,7 +1,7 @@
 # from component.aqi import AqiComponent
 # from component.sunforecast import SunForecastComponent
 from component.calendar import CalendarComponent
-from component.countdown import CountdownComponent
+from component.countdown import CountdownComponent, CountDirection
 from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 from component.distance import DistanceComponent
@@ -220,7 +220,8 @@ def create_clock(config: AppConfig) -> Clock:
     )
     paris_component = CountdownComponent(
         current_time=current_time,
-        target_date=pytz.timezone("Europe/Paris").localize(datetime.datetime(2024, 7, 19, 8, 35, 0)),
+        target_date=pytz.timezone("Europe/Paris").localize(datetime.datetime(2024, 6, 28, 13, 3, 0)),
+        count_direction=CountDirection.UP,
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
