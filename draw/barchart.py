@@ -1,12 +1,12 @@
 from .drawable import Drawable
-from typing import Literal
+from typing import Literal, Any
 
 # horizontal or vertical enum
 Orientation = Literal["horizontal", "vertical"]
 
 class BarChart(Drawable):
-    def __init__(self, orientation: Orientation, border: int = 0, border_color: tuple[int, int, int] = (0, 0, 0), *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, orientation: Orientation, border: int = 0, border_color: tuple[int, int, int] = (0, 0, 0), **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.orientation = orientation
         self.border = border
         self.border_color = border_color
@@ -24,7 +24,7 @@ class BarChart(Drawable):
         raise NotImplementedError
 
     def interpolate_color(self, value: float) -> tuple[int, int, int]:
-        def lerp_color(start_color, end_color, t):
+        def lerp_color(start_color: tuple[int, int, int], end_color: tuple[int, int, int], t: float) -> tuple[int, int, int]:
             return (
                 int(start_color[0] + (end_color[0] - start_color[0]) * t),
                 int(start_color[1] + (end_color[1] - start_color[1]) * t),

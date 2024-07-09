@@ -2,12 +2,12 @@ from .drawable import Drawable
 from PIL import Image, ImageFont, ImageDraw
 from stretchable.style.geometry.length import Scale, LengthPoints
 from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from typing import Literal
+from typing import Literal, Any
 import os.path
 
 class TextNode(Drawable):
-    def __init__(self, font_path: str, font: str, *args, **kwargs) -> None:
-        super(TextNode, self).__init__(measure=self.measure_node, *args, **kwargs)
+    def __init__(self, font_path: str, font: str, **kwargs: Any) -> None:
+        super(TextNode, self).__init__(measure=self.measure_node, **kwargs)
         self.pil_font: ImageFont.ImageFont = ImageFont.load(os.path.join(font_path, f"{font}.pil"))
         self.measuring_buffer = Image.new("RGBA", (1, 1))
         self.measuring_imagedraw = ImageDraw.Draw(self.measuring_buffer)
@@ -23,7 +23,7 @@ class TextNode(Drawable):
             # change... since the text could have different width... but it's a
             # good enough approximation for now.
             print(f"Text changed from {self.last_text} to {text}; length change!")
-            self.mark_dirty()
+            self.mark_dirty() # type: ignore
             self.last_text = text
 
     def get_text(self) -> str:
@@ -44,10 +44,10 @@ class TextNode(Drawable):
         if text == "":
             return SizePoints(LengthPoints.points(0), LengthPoints.points(0))
 
-        if size_available_space.width.scale == Scale.POINTS:
+        if size_available_space.width.scale == Scale.POINTS: # type: ignore
             # Request for something with a specific width...
             max_width = size_available_space.width.value
-        elif size_available_space.width.scale == Scale.MIN_CONTENT:
+        elif size_available_space.width.scale == Scale.MIN_CONTENT: # type: ignore
             # Return the smallest width we can support... hopefully measure_text doesn't choke on this.
             max_width = 1
         else:

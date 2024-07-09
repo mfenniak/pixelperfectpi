@@ -1,14 +1,12 @@
 from PIL import Image, ImageDraw
 from stretchable import Node
-from typing import TypeVar, Generic
+from typing import TypeVar, Any
 
-T = TypeVar('T')
-
-class Drawable(Node, Generic[T]):
-    def __init__(self, *args, **kwargs) -> None:
+class Drawable(Node):
+    def __init__(self, **kwargs: Any) -> None:
         self.buffer: Image.Image | None = None
         self.imagedraw = ImageDraw.Draw(Image.new("RGBA", (1, 1))) # FIXME: typing hack
-        super(Drawable, self).__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
     def verify_layout_is_clean(self) -> None:
         # Before drawing, a chance to mark ourselves as dirty if our
@@ -33,7 +31,7 @@ class Drawable(Node, Generic[T]):
         assert self.buffer is not None
         self.buffer.paste(color, box=(0,0,self.buffer.width,self.buffer.height))
 
-    def rect(self, color: tuple[int, int, int], x: int, y: int, width: int, height) -> None:
+    def rect(self, color: tuple[int, int, int], x: int, y: int, width: int, height: int) -> None:
         if width == 0 or height == 0:
             return
         # imagedraw rectangle is inclusive on both sides; the -1 is required to make

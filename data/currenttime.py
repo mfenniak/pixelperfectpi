@@ -13,7 +13,7 @@ class CurrentTimeDataResolver(DataResolver[float]):
         self._frozen_time = None
 
     @property
-    def data(self):
+    def data(self) -> float | None: # type: ignore
         if self._frozen_time is not None:
             return self._frozen_time
         return time.time()

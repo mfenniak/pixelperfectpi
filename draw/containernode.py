@@ -1,10 +1,10 @@
 from .drawable import Drawable
 from PIL import Image
-from typing import List
+from typing import List, Any
 
 class ContainerNode(Drawable):
-    def __init__(self, *args, **kwargs) -> None:
-        super(ContainerNode, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs: Any) -> None:
+        super(ContainerNode, self).__init__(**kwargs)
         # self.is_root = is_root
         self._children: List[Drawable] = []
         self.size = (0, 0)

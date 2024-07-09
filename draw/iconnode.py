@@ -2,7 +2,7 @@ from .drawable import Drawable
 from PIL import Image
 from stretchable.style.geometry.length import LengthPoints
 from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
-from typing import Literal
+from typing import Literal, Any
 import os.path
 
 class IconNode(Drawable):
@@ -10,7 +10,7 @@ class IconNode(Drawable):
         icon_path: str,
         icon_file: str,
         background_color: tuple[int, int, int, int] | tuple[int, int, int] = (0, 0, 0),
-        **kwargs) -> None:
+        **kwargs: Any) -> None:
 
         self.icon = Image.open(os.path.join(icon_path, icon_file))
         self.background_color = background_color

@@ -47,7 +47,7 @@ class DailyWeatherForecastComponent(TextNode, CarouselPanel):
 
 
 class HourlyWeatherForecastComponent(ContainerNode, CarouselPanel):
-    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts],  display_tz: pytz.BaseTzInfo, font_path: str, num_hours: int = 4, **kwargs) -> None:
+    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts],  display_tz: pytz.BaseTzInfo, font_path: str, num_hours: int = 4, **kwargs: Any) -> None:
         super().__init__(
             flex_grow=1,
             flex_direction=FlexDirection.ROW,

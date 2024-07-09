@@ -27,11 +27,11 @@ class CountdownComponent(ContainerNode, CarouselPanel):
             return True
 
     class CountdownIcon(IconNode):
-        def __init__(self, icon_path: str, **kwargs) -> None:
+        def __init__(self, icon_path: str, **kwargs: Any) -> None:
             super().__init__(icon_path=icon_path, icon_file="france.png", background_color=(0, 32, 0), **kwargs)
 
     class CountdownText(TextNode):
-        def __init__(self, current_time: DataResolver[float], target_date: datetime, font_path: str, **kwargs) -> None:
+        def __init__(self, current_time: DataResolver[float], target_date: datetime, font_path: str, **kwargs: Any) -> None:
             super().__init__(font="5x8", font_path=font_path, **kwargs)
             self.current_time = current_time
             self.target_date = target_date

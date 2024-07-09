@@ -1,6 +1,7 @@
 from data import DataResolver, CurrentWeatherData
 from draw import TextNode, CarouselPanel, ContainerNode, BarChart
 from stretchable.style import AlignItems
+from typing import Any
 
 class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
     def __init__(self, data_resolver: DataResolver[CurrentWeatherData], font_path: str) -> None:
@@ -33,7 +34,7 @@ class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
             return f"UV\n{self.data_resolver.data.uv}"
 
     class UvGraphComponent(BarChart):
-        def __init__(self, data_resolver: DataResolver[CurrentWeatherData], *args, **kwargs) -> None:
+        def __init__(self, data_resolver: DataResolver[CurrentWeatherData], **kwargs: Any) -> None:
             super().__init__(orientation="vertical", size=(5, 12), border=1, border_color=(192, 191, 159), **kwargs)
             self.data_resolver = data_resolver
 

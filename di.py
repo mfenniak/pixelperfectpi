@@ -28,7 +28,7 @@ from draw import ContainerNode, CarouselDrawable
 from mqtt import MqttConfig, MqttServer, MqttMessageReceiver
 from pixelperfectpi import Clock
 from stretchable.style import PCT, FlexDirection, AlignItems, JustifyContent
-from typing import List
+from typing import List, Any
 import asyncio
 import datetime
 import pytz
@@ -59,7 +59,7 @@ def create_clock(config: AppConfig) -> Clock:
     display_tz = pytz.timezone(config.display_tz)
 
     # Create data resolvers
-    data_resolvers: List[DataResolver] = []
+    data_resolvers: List[DataResolver[Any]] = []
     current_time = CurrentTimeDataResolver()
     data_resolvers.append(current_time)
     current_weather = CurrentWeatherDataMqttResolver(

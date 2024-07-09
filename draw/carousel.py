@@ -1,6 +1,6 @@
 from .drawable import Drawable
 from data import DataResolver
-from typing import List
+from typing import List, Any
 
 class CarouselPanel(object):
     def get_drawable(self) -> Drawable:
@@ -15,8 +15,8 @@ class CarouselPanel(object):
 
 
 class CarouselDrawable(Drawable):
-    def __init__(self, current_time: DataResolver[float], time_per_frame: int = 5, *args, **kwargs) -> None:
-        super(CarouselDrawable, self).__init__(*args, **kwargs)
+    def __init__(self, current_time: DataResolver[float], time_per_frame: int = 5, **kwargs: Any) -> None:
+        super(CarouselDrawable, self).__init__(**kwargs)
         self.current_time = current_time
         self.time_per_frame = time_per_frame
         self.all_panels: List[CarouselPanel] = []
