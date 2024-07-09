@@ -19,7 +19,6 @@ class CountdownComponent(ContainerNode, CarouselPanel):
         )
         self.current_time = current_time
         self.target_date = target_date
-        print(repr(self.target_date))
         self.count_direction = count_direction
         self.add_child(self.CountdownIcon(icon_path))
         self.add_child(self.CountdownText(current_time, target_date, font_path, count_direction))

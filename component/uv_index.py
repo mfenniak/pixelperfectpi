@@ -35,7 +35,7 @@ class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
 
     class UvGraphComponent(BarChart):
         def __init__(self, data_resolver: DataResolver[CurrentWeatherData], **kwargs: Any) -> None:
-            super().__init__(orientation="vertical", size=(5, 12), border=1, border_color=(192, 191, 159), **kwargs)
+            super().__init__(orientation="vertical", size=(5, 12), border=1, border_color=(19, 19, 15), **kwargs)
             self.data_resolver = data_resolver
 
         def min_value(self) -> float:
