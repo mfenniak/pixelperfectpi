@@ -23,6 +23,7 @@ setup(
         'component/weatherforecast',
         'data/__init__',
         'data/calendar',
+        'data/currenttime',
         'data/distance',
         'data/door',
         'data/envcanada',
