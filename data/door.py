@@ -6,7 +6,6 @@ from mqtt import MqttMessageReceiver
 from typing import Literal
 import datetime
 import json
-import math
 import pytz
 
 class DoorStatus(Enum):

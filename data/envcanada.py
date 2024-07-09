@@ -1,10 +1,7 @@
 from .resolver import ScheduledDataResolver
 from .weather import WeatherForecasts
 from lxml import etree # type: ignore
-from typing import Any
 import aiohttp
-import datetime
-import pytz
 
 class EnvironmentCanadaDataResolver(ScheduledDataResolver[WeatherForecasts]): # FIXME: change to a dataclass
     def __init__(self) -> None:

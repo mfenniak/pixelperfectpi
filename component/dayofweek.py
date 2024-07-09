@@ -1,22 +1,26 @@
-from data import StaticDataResolver
-from draw import DrawPanel, Box
+from data import DataResolver
+from draw import TextNode, CarouselPanel
 from PIL import ImageColor
-from typing import Any
 import time
 
-class DayOfWeekComponent(DrawPanel[None]):
-    def __init__(self, box: Box, font_path: str, **kwargs: Any) -> None:
-        assert box is not None
+class DayOfWeekComponent(TextNode, CarouselPanel):
+    def __init__(self, font_path: str, current_time: DataResolver[float]) -> None:
         assert font_path is not None
-        super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
-        self.load_font("7x13")
+        assert current_time is not None
+        super().__init__(
+            font_path=font_path,
+            font="7x13",
+        )
+        self.current_time = current_time
 
-    def do_draw(self, now: float, data: None, frame: int) -> None:
-        self.fill((0, 0, 0))
+    def get_text(self) -> str:
+        now = self.current_time.data
+        assert now is not None
+        timestr = time.strftime("%a", time.localtime(now))
+        return timestr
 
-        # FIXME: color is synced to the time, but, only by copy-and-paste
+    def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
+        now = self.current_time.data
+        assert now is not None
         hue = int(now*50 % 360)
-        color = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-
-        timestr = time.strftime("%a")
-        self.draw_text(color, timestr)
+        return ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")

@@ -1,12 +1,7 @@
 # Generic weather data classes.
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-import json
-import datetime
-import pytz
-from aiomqtt import Client, Message
-from mqtt import MqttMessageReceiver
+from typing import List
 import datetime
 
 @dataclass

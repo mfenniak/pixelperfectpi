@@ -40,9 +40,8 @@ from aiomqtt import Client, Message
 from dataclasses import dataclass
 from enum import Enum, auto
 from mqtt import MqttMessageReceiver
-import json
 import datetime
-import pytz
+import json
 
 class TimerState(Enum):
     UNKNOWN = auto()

@@ -1,32 +1,36 @@
-from data import CalendarDataResolver
-from draw import DrawPanel, Box
-from typing import Any
+from data import CalendarDataResolver, DataResolver
+from draw import TextNode, CarouselPanel
 from PIL import ImageColor
-import pytz
+from typing import Any
 import datetime
+import pytz
 
-class CalendarComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, calendar: CalendarDataResolver, display_tz: pytz.BaseTzInfo, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=calendar, box=box, font_path=font_path)
+class CalendarComponent(TextNode, CarouselPanel):
+    def __init__(self, calendar: CalendarDataResolver, current_time: DataResolver[float], display_tz: pytz.BaseTzInfo, font_path: str, calendar_index: int, **kwargs: Any) -> None:
+        super().__init__(font="4x6", font_path=font_path, flex_grow=1, **kwargs)
+        self.calendar = calendar
+        self.current_time = current_time
         self.display_tz = display_tz
-        self.load_font("4x6")
+        self.calendar_index = calendar_index
 
-    def frame_count(self, data: dict[str, Any] | None, now: float) -> int:
-        if data is None:
-            return 0
-        return min(len(data["future_events"]), 3) # no more than this many events
+    def my_event(self) -> Any | None:
+        calendar = self.calendar.data
+        if calendar is None:
+            return None
+        future_events = calendar.get("future_events", [])
+        if self.calendar_index >= len(future_events):
+            return None
+        return future_events[self.calendar_index]
 
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        self.fill((0, 0, 16))
+    def is_carousel_visible(self) -> bool:
+        return self.my_event() is not None
 
-        if data is None:
-            return
+    def get_text(self) -> str:
+        event = self.my_event()
+        if event is None:
+            return ""
 
-        # FIXME: color is synced to the time, but, only by copy-and-paste
-        hue = int(now*50 % 360)
-        textColor = ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")
-
-        (dt, summary) = data["future_events"][frame]
+        (dt, summary) = event
 
         preamble = ""
         now_dt = datetime.datetime.now(self.display_tz)
@@ -58,4 +62,13 @@ class CalendarComponent(DrawPanel[dict[str, Any]]):
             preamble = preamble[:-1] + preamble[-1].lower()
 
         text = f"{preamble}: {summary}"
-        self.draw_text(textColor, text.encode("ascii", errors="ignore").decode("ascii"))
+        return text
+
+    def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+        return (0, 0, 16)
+
+    def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
+        now = self.current_time.data
+        assert now is not None
+        hue = int(now*50 % 360)
+        return ImageColor.getrgb(f"hsl({hue}, 100%, 50%)")

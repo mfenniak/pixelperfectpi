@@ -1,6 +1,6 @@
 from .ovenpower import OvenOnDataResolver, OvenStatus
 from aiomqtt import Client, Message
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 import json
 import pytest
 

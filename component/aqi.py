@@ -1,23 +1,26 @@
 from data import PurpleAirDataResolver
-from draw import DrawPanel, Box
+from draw import TextNode, CarouselPanel
 from typing import Any
 
-class AqiComponent(DrawPanel[dict[str, Any]]):
-    def __init__(self, purpleair: PurpleAirDataResolver, box: Box, font_path: str, **kwargs: Any) -> None:
-        super().__init__(data_resolver=purpleair, box=box, font_path=font_path)
-        self.load_font("7x13")
+class AqiComponent(TextNode, CarouselPanel):
+    def __init__(self, purpleair: PurpleAirDataResolver, font_path: str, **kwargs: Any) -> None:
+        super().__init__(font="7x13", font_path=font_path)
+        self.purpleair = purpleair
 
-    def frame_count(self, data: dict[str, Any] | None, now: float) -> int:
-        if data == None:
-            return 0
-        else:
-            return 1
+    def is_carousel_visible(self) -> bool:
+        return self.purpleair.data is not None
 
-    def do_draw(self, now: float, data: dict[str, Any] | None, frame: int) -> None:
-        self.fill((0, 16, 0))
-        if data is None:
-            return
-        (red, green, blue) = data["p25aqic"]
-        textColor = (red, green, blue)
-        aqi = data['p25aqiavg']
-        self.draw_text(textColor, f"AQI {aqi:.0f}")
+    def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+        return (0, 16, 0)
+
+    def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
+        if self.purpleair.data is None:
+            return (255, 255, 255)
+        (red, green, blue) = self.purpleair.data["p25aqic"]
+        return (red, green, blue)
+
+    def get_text(self) -> str:
+        if self.purpleair.data is None:
+            return "N/A"
+        aqi = self.purpleair.data['p25aqiavg']
+        return f"AQI {aqi:.0f}"
