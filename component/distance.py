@@ -6,7 +6,7 @@ class DistanceComponent(ContainerNode, CarouselPanel):
     def __init__(self, distance: DistanceDataResolver, font_path: str, icon_path: str, label: str, icon: str) -> None:
         super().__init__(
             flex_grow=1,
-            align_items=AlignItems.CENTER,
+            align_items=AlignItems.STRETCH,
         )
         self.distance = distance
         self.label = label

@@ -4,12 +4,13 @@ from draw import TextNode, CarouselPanel, ContainerNode, IconNode
 from PIL import ImageColor
 from typing import Any
 import pytz
+from stretchable.style import AlignItems
 
 class CountdownComponent(ContainerNode, CarouselPanel):
     def __init__(self, current_time: DataResolver[float], target_date: datetime, font_path: str, icon_path: str, **kwargs: Any) -> None:
         super().__init__(
             flex_grow=1,
-            align_items=AlignItems.CENTER,
+            align_items=AlignItems.STRETCH,
         )
         self.current_time = current_time
         self.target_date = target_date

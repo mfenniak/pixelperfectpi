@@ -8,7 +8,7 @@ class TimerComponent(ContainerNode, CarouselPanel):
     def __init__(self, timer: TimerDataResolver, font_path: str, icon_path: str) -> None:
         super().__init__(
             flex_grow=1,
-            align_items=AlignItems.CENTER,
+            align_items=AlignItems.STRETCH,
         )
         self.timer = timer
         self.add_child(self.TimerIcon(icon_path))

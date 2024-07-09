@@ -8,7 +8,7 @@ class DoorComponent(ContainerNode, CarouselPanel):
     def __init__(self, door: DoorDataResolver, font_path: str, icon_path: str, name: str) -> None:
         super().__init__(
             flex_grow=1,
-            align_items=AlignItems.CENTER,
+            align_items=AlignItems.STRETCH,
         )
         self.door = door
         self.name = name

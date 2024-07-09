@@ -1,5 +1,7 @@
 from .drawpanel import Drawable
 from PIL import Image
+from stretchable.style.geometry.length import LengthPoints
+from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints
 from typing import Literal
 import os.path
 
@@ -8,12 +10,23 @@ class IconNode(Drawable):
         icon_path: str,
         icon_file: str,
         background_color: tuple[int, int, int, int] | tuple[int, int, int] = (0, 0, 0),
-        *args,
         **kwargs) -> None:
 
         self.icon = Image.open(os.path.join(icon_path, icon_file))
         self.background_color = background_color
-        super().__init__(size=(self.icon.width, self.icon.height), *args, **kwargs)
+
+        super().__init__(
+            measure=self.measure_node,
+            **kwargs
+        )
+
+    def measure_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
+        width, height = self.icon.width, self.icon.height
+        # print(f"measure_node, size_points={size_points}, size_available_space={size_available_space}, returning {width=}, {height=}")
+        return SizePoints(
+            LengthPoints.points(width),
+            LengthPoints.points(height)
+        )
 
     def do_draw(self) -> None:
         assert self.buffer is not None

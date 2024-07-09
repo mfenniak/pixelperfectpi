@@ -6,7 +6,7 @@ class MediaPlayerComponent(ContainerNode, CarouselPanel):
     def __init__(self, media_player: MediaPlayerDataResolver, font_path: str, icon_path: str) -> None:
         super().__init__(
             flex_grow=1,
-            align_items=AlignItems.CENTER,
+            align_items=AlignItems.STRETCH,
         )
         self.media_player = media_player
         self.add_child(self.MediaPlayerIcon(icon_path))
