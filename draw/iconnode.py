@@ -1,4 +1,4 @@
-from .drawpanel import Drawable
+from .drawable import Drawable
 from PIL import Image
 from stretchable.style.geometry.length import LengthPoints
 from stretchable.style.geometry.size import SizeAvailableSpace, SizePoints

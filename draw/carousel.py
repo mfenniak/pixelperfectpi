@@ -1,4 +1,4 @@
-from .drawpanel import Drawable
+from .drawable import Drawable
 from data import DataResolver
 from typing import List
 

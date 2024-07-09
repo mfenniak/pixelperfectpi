@@ -1,4 +1,4 @@
-from .drawpanel import Drawable
+from .drawable import Drawable
 from PIL import Image
 from typing import List
 

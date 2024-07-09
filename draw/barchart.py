@@ -1,4 +1,4 @@
-from .drawpanel import Drawable
+from .drawable import Drawable
 from typing import Literal
 
 # horizontal or vertical enum
