@@ -1,6 +1,5 @@
 # from component.aqi import AqiComponent
 # from component.sunforecast import SunForecastComponent
-# from draw import MultiPanelPanel
 from component.calendar import CalendarComponent
 from component.countdown import CountdownComponent
 from component.currenttemp import CurrentTemperatureComponent
@@ -12,7 +11,7 @@ from component.oven import OvenOnComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
 from component.uv_index import CurrentUvIndexComponent
-from component.weatherforecast import DailyWeatherForecastComponent #, HourlyWeatherForecastComponent
+from component.weatherforecast import DailyWeatherForecastComponent, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
 from data.calendar import CalendarDataResolver
@@ -129,23 +128,13 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         current_time=current_time,
     )
-    # current_component = MultiPanelPanel(
-    #     panels=[
-    #         current_temperature_component,
-    #         uv_index_component,
-    #         day_of_week_component,
-    #     ],
-    #     box=current_position,
+
+    # aqi_component = providers.Singleton(
+    #     AqiComponent,
+    #     purpleair=purpleair,
+    #     box=lower_position_inner,
     #     font_path=config.font_path,
     # )
-    # lower_position_inner = (0, 0, 64, 19)
-    # lower_position = (0, 13, 64, 19)
-    # # aqi_component = providers.Singleton(
-    # #     AqiComponent,
-    # #     purpleair=purpleair,
-    # #     box=lower_position_inner,
-    # #     font_path=config.font_path,
-    # # )
     calendars = []
     for i in range(3):
         calendars.append(CalendarComponent(
@@ -171,19 +160,18 @@ def create_clock(config: AppConfig) -> Clock:
         # box=lower_position_inner,
         font_path=config.font_path,
     )
-    # hourly_weather_forecast_component = HourlyWeatherForecastComponent(
-    #     weather_forecast_data=weather_forecast_data,
-    #     display_tz=display_tz,
+    hourly_weather_forecast_component = HourlyWeatherForecastComponent(
+        weather_forecast_data=weather_forecast_data,
+        display_tz=display_tz,
+        font_path=config.font_path,
+    )
+    # sun_forecast_component = providers.Singleton(
+    #     SunForecastComponent,
+    #     env_canada=env_canada,
     #     box=lower_position_inner,
     #     font_path=config.font_path,
+    #     display_tz=display_tz,
     # )
-    # # sun_forecast_component = providers.Singleton(
-    # #     SunForecastComponent,
-    # #     env_canada=env_canada,
-    # #     box=lower_position_inner,
-    # #     font_path=config.font_path,
-    # #     display_tz=display_tz,
-    # # )
     oven_component = OvenOnComponent(
         oven_on=oven_on_data,
         font_path=config.font_path,
@@ -237,28 +225,6 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
-
-    # # Create panels
-    # lower_panels = MultiPanelPanel(
-    #     panels=[
-    #         # aqi_component,
-    #         calendar_component,
-    #         daily_weather_forecast_component_today,
-    #         hourly_weather_forecast_component,
-    #         # sun_forecast_component,
-    #         oven_component,
-    #         distance_component_mathieu,
-    #         distance_component_amanda,
-    #         door_component_garage,
-    #         door_component_man,
-    #         door_component_back,
-    #         media_player_component,
-    #         timer_component,
-    #         paris_component,
-    #     ],
-    #     box=lower_position,
-    #     font_path=config.font_path,
-    # )
 
     # RGB Matrix initialization
     if config.mode == "real":
@@ -315,6 +281,7 @@ def create_clock(config: AppConfig) -> Clock:
         bottom.add_panel(calendar)
     bottom.add_panel(daily_weather_forecast_component_today)
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
+    bottom.add_panel(hourly_weather_forecast_component)
     bottom.add_panel(distance_component_amanda)
     bottom.add_panel(distance_component_mathieu)
     bottom.add_panel(door_component_back)

@@ -8,6 +8,7 @@ class ContainerNode(Drawable):
         # self.is_root = is_root
         self._children: List[Drawable] = []
         self.size = (0, 0)
+        self.background_color = (0, 0, 0)
 
     def set_size(self, width: int, height: int) -> None:
         self.size = (width, height)
@@ -30,6 +31,6 @@ class ContainerNode(Drawable):
 
     def do_draw(self) -> None:
         assert self.buffer is not None
-        self.fill((0, 0, 0))
+        self.fill(self.background_color)
         for child in self._children:
             child.draw(self.buffer)

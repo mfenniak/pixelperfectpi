@@ -1,5 +1,6 @@
 from data import WeatherForecast, WeatherForecasts, DataResolver
-from draw import TextNode, CarouselPanel
+from draw import TextNode, CarouselPanel, ContainerNode
+from stretchable.style import AlignItems, FlexDirection, JustifyContent
 from typing import Any
 import datetime
 import pytz
@@ -45,205 +46,161 @@ class DailyWeatherForecastComponent(TextNode, CarouselPanel):
         return txt
 
 
-# class HourlyWeatherForecastComponent(DrawPanel[WeatherForecasts]):
-#     def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], display_tz: pytz.BaseTzInfo, box: Box, font_path: str, **kwargs: Any) -> None:
-#         super().__init__(data_resolver=weather_forecast_data, box=box, font_path=font_path)
-#         self.load_font("4x6")
+class HourlyWeatherForecastComponent(ContainerNode, CarouselPanel):
+    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts],  display_tz: pytz.BaseTzInfo, font_path: str, num_hours: int = 4, **kwargs) -> None:
+        super().__init__(
+            flex_grow=1,
+            flex_direction=FlexDirection.ROW,
+            justify_content=JustifyContent.SPACE_BETWEEN,
+            **kwargs,
+        )
+        self.weather_forecast_data = weather_forecast_data
+        for i in range(num_hours):
+            self.add_child(HourlyWeatherForecastSingleHourPanel(weather_forecast_data=weather_forecast_data, display_tz=display_tz, font_path=font_path, offset_hour=i+1))
+        self.background_color = (16, 0, 0)
 
-#         # create four subpanels, each with our height, but 1/4th the width
-#         self.subpanels = []
-#         for i in range(4):
-#             subbox = (box[0] + i * box[2] // 4, box[1], box[2] // 4, box[3])
-#             subpanel = HourlyWeatherForecastSingleHourPanel(data_resolver=weather_forecast_data, display_tz=display_tz, box=subbox, font_path=font_path)
-#             subpanel.load_font("4x6")
-#             self.subpanels.append(subpanel)
-
-#     def frame_count(self, data: WeatherForecasts | None, now: float) -> int:
-#         if data is None:
-#             return 0
-#         else:
-#             return 1
-
-#     def next_hours(self, data: WeatherForecasts) -> Iterable[WeatherForecast]:
-#         now = datetime.datetime.now(tz=pytz.utc)
-#         # round down now to the hour, so that the current hour's forecast is
-#         # included, unless the hour is nearly over... this doesn't always work
-#         # since sometimes HA will refresh and remove this hour's forecast since
-#         # it's current.
-#         if now.minute < 45:
-#             now = now.replace(minute=0, second=0, microsecond=0)
-#         for forecast in sorted(data.hourly, key=lambda f: f.datetime or datetime.datetime.min):
-#             if forecast.datetime is not None and now <= forecast.datetime:
-#                 yield forecast
-
-#     def do_draw(self, now: float, data: WeatherForecasts | None, frame: int) -> None:
-#         self.fill((16, 0, 0))
-#         if data is None:
-#             return
-#         next_hours = [x for x in itertools.islice(self.next_hours(data), 4)]
-#         for i, forecast in enumerate(next_hours):
-#             self.subpanels[i].draw(self.buffer, now, forecast, 0)
+    def is_carousel_visible(self) -> bool:
+        return self.weather_forecast_data.data is not None
 
 
-# class HourlyWeatherForecastSingleHourPanel(DrawPanel[WeatherForecast | None]):
-#     def __init__(self, box: Box, display_tz: pytz.BaseTzInfo, font_path: str, **kwargs: Any) -> None:
-#         super().__init__(data_resolver=StaticDataResolver(None), box=box, font_path=font_path)
-#         self.display_tz = display_tz
-#         self.load_font("4x6")
+def interpolate_color(temp: float) -> tuple[int, int, int]:
+    """
+    Converts a temperature (in Celsius) to an RGB color tuple.
+    -40°C and below are deep blue.
+    0°C is light blue.
+    10°C is light green.
+    20°C is green (ideal comfortable temperature).
+    30°C is yellow.
+    40°C and above is red.
+    Supports temperatures from -40°C to 40°C.
+    """
+    # Define the color thresholds
+    thresholds = [
+        (-40, (0, 0, 255)),    # Deep blue
+        (0, (173, 216, 230)),  # Light blue
+        (10, (144, 238, 144)), # Light green
+        (20, (0, 255, 0)),     # Green
+        (30, (255, 255, 0)),   # Yellow
+        (40, (255, 0, 0))      # Red
+    ]
+    
+    # Find the two thresholds that the current temp lies between
+    for i in range(len(thresholds) - 1):
+        if thresholds[i][0] <= temp <= thresholds[i+1][0]:
+            lower_temp, lower_color = thresholds[i]
+            upper_temp, upper_color = thresholds[i+1]
+            break
+    else:
+        # If temp is out of the bounds, clamp it
+        if temp < -40:
+            return thresholds[0][1]
+        else:
+            return thresholds[-1][1]
+    
+    # Perform linear interpolation between the two color thresholds
+    factor = (temp - lower_temp) / (upper_temp - lower_temp)
+    r = int(lower_color[0] + (upper_color[0] - lower_color[0]) * factor)
+    g = int(lower_color[1] + (upper_color[1] - lower_color[1]) * factor)
+    b = int(lower_color[2] + (upper_color[2] - lower_color[2]) * factor)
+    
+    return (r, g, b)
 
-#         self.root = Node(
-#             size=(self.w, self.h),
-#             flex_direction=FlexDirection.COLUMN,
-#             align_items=AlignItems.CENTER,
-#             justify_content=JustifyContent.CENTER,
-#             # justify_content=JustifyContent.SPACE_AROUND,
-#         )
 
-#         self.temp_node = Node(measure=self.measure_temp_node)
-#         self.root.append(self.temp_node)
+class HourlyWeatherForecastSingleHourPanel(ContainerNode, CarouselPanel):
+    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], display_tz: pytz.BaseTzInfo, font_path: str, offset_hour: int, **kwargs: Any) -> None:
+        super().__init__(
+            flex_direction=FlexDirection.COLUMN,
+            justify_content=JustifyContent.STRETCH,
+            **kwargs,
+        )
 
-#         self.precip_node = Node(measure=self.measure_precip_node)
-#         self.root.append(self.precip_node)
+        self.font_path = font_path
+        self.weather_forecast_data = weather_forecast_data
+        self.display_tz = display_tz
+        self.offset_hour = offset_hour
+        self.background_color = (16, 0, 0)
 
-#         self.time_node = Node(measure=self.measure_time_node)
-#         self.root.append(self.time_node)
+        self.add_child(self.HourText(self))
+        self.add_child(self.TemperatureText(self))
+        self.add_child(self.PrecipitationText(self))
 
-#         self.forecast: WeatherForecast | None = None
+    # FIXME? Maybe this should be cached briefly since it's accessed repeatedly by the three subframes
+    def get_forecast(self) -> WeatherForecast | None:
+        forecast = self.weather_forecast_data.data
+        if forecast is None:
+            return None
+        now = datetime.datetime.now(pytz.utc).astimezone(self.display_tz)
+        target_time = now + self.offset_hour * datetime.timedelta(hours=1)
+        # print(f"Offset {self.offset_hour} is looking for {target_time}...")
+        for hour in forecast.hourly:
+            if hour.datetime is None:
+                continue
+            hour_time = hour.datetime.astimezone(self.display_tz)
+            # print(f"\tFound {hour_time}...") 
+            if hour_time.date() == target_time.date() and hour_time.hour == target_time.hour:
+                # print("\tThat works!")
+                return hour
+        return None
 
-#     def frame_count(self, data: WeatherForecast | None, now: float) -> int:
-#         if data is None:
-#             return 0
-#         else:
-#             return 1
+    class HourText(TextNode):
+        def __init__(self, hwparent: "HourlyWeatherForecastSingleHourPanel") -> None:
+            super().__init__(font="4x6", font_path=hwparent.font_path)
+            self.hwparent = hwparent
 
-#     def temp_text(self) -> str:
-#         if self.forecast is not None and self.forecast.temperature_high is not None:
-#             return f"{self.forecast.temperature_high:.0f}°"
-#         return ""
+        def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+            return self.hwparent.background_color
 
-#     def precip_text(self) -> str:
-#         # Fake precip for testing...
-#         # if self.forecast is not None and self.forecast.datetime is not None:
-#         #     if self.forecast.datetime.hour == 23:
-#         #         self.forecast.precipitation = 2.5
-#         #     # print("hour", self.forecast.datetime.hour)
-#         if self.forecast is not None and self.forecast.precipitation is not None and self.forecast.precipitation > 0:
-#             return f"{self.forecast.precipitation:.0f}mm"
-#         return ""
+        def get_text(self) -> str:
+            forecast = self.hwparent.get_forecast()
+            if forecast is None:
+                return "N/A"
+            assert forecast.datetime is not None
+            text = forecast.datetime.astimezone(self.hwparent.display_tz).strftime("%-I%p")
+            if text.endswith("M"): # PM/AM -> P/A; no strftime option for that
+                text = text[:-1]
+            if text.endswith("P") or text.endswith("A"): # lowercase this
+                text = text[:-1] + text[-1].lower()
+            return text
 
-#     def time_text(self) -> str:
-#         if self.forecast is not None and self.forecast.datetime is not None:
-#             time_text = self.forecast.datetime.astimezone(self.display_tz).strftime("%-I%p")
-#             if time_text.endswith("M"): # PM/AM -> P/A; no strftime option for that
-#                 time_text = time_text[:-1]
-#             if time_text.endswith("P") or time_text.endswith("A"): # lowercase this
-#                 time_text = time_text[:-1] + time_text[-1].lower()
-#             return time_text
-#         return ""
+    class TemperatureText(TextNode):
+        def __init__(self, hwparent: "HourlyWeatherForecastSingleHourPanel") -> None:
+            super().__init__(font="4x6", font_path=hwparent.font_path)
+            self.hwparent = hwparent
 
-#     def measure_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace, text: str) -> SizePoints:
-#         # print(f"measure_node, size_points={size_points}, size_available_space={size_available_space}, text={text}")
-#         if text == "":
-#             return SizePoints(LengthPoints.points(0), LengthPoints.points(0))
+        def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+            return self.hwparent.background_color
 
-#         if size_available_space.width.scale == Scale.POINTS:
-#             # Request for something with a specific width...
-#             max_width = size_available_space.width.value
-#         else:
-#             max_width = 1024
+        def get_text_color(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
+            forecast = self.hwparent.get_forecast()
+            if forecast is None:
+                return (200, 200, 200)
+            if forecast.temperature_high is None:
+                return (200, 200, 200)
+            return interpolate_color(forecast.temperature_high)
+
+        def get_text(self) -> str:
+            forecast = self.hwparent.get_forecast()
+            if forecast is None:
+                return "N/A"
+            if forecast.temperature_high is None:
+                return "N/A"
+            return f"{forecast.temperature_high:.0f}°"
+
+
+    class PrecipitationText(TextNode):
+        def __init__(self, hwparent: "HourlyWeatherForecastSingleHourPanel") -> None:
+            super().__init__(font="4x6", font_path=hwparent.font_path)
+            self.hwparent = hwparent
         
-#         (width, height) = self.measure_text(text, max_width)
+        def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
+            return self.hwparent.background_color
 
-#         # print(f"measure_node, text={text}, returning {width=}, {height=}")
-
-#         return SizePoints(
-#             LengthPoints.points(width),
-#             LengthPoints.points(height)
-#         )
-
-#     def measure_temp_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
-#         return self.measure_node(size_points, size_available_space, self.temp_text())
-
-#     def measure_precip_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
-#         return self.measure_node(size_points, size_available_space, self.precip_text())
-
-#     def measure_time_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
-#         return self.measure_node(size_points, size_available_space, self.time_text())
-
-#     def do_draw(self, now: float, data: WeatherForecast | None, frame: int) -> None:
-#         self.fill((16, 0, 0))
-#         if data is None:
-#             return
-
-#         if data is not self.forecast:
-#             self.forecast = data
-#             self.root.mark_dirty()
-
-#         if self.root.is_dirty:
-#             # print("root is dirty")
-#             self.root.compute_layout(
-#                 available_space=SizeAvailableSpace(self.w, self.h),
-#                 use_rounding=True,
-#             )
-#             # print("root\t", self.root.get_box())
-#             # print("temp_node\t", self.temp_node.get_box(relative=False))
-#             # print("precip_node\t", self.precip_node.get_box(relative=False))
-#             # print("time_node\t", self.time_node.get_box(relative=False))
-
-#         box = self.temp_node.get_box(relative=False)
-#         self.rect(
-#             (32, 0, 0),
-#             int(box.x), int(box.y),
-#             int(box.width), int(box.height),
-#         )
-#         # FIXME: this won't work if this text wraps -- would need to pass the
-#         # box's width to wrap correctly -- but this should work temporarily for
-#         # this component before we do a full layout/render rewrite
-#         self.draw_text((200, 200, 200), self.temp_text(), pad_left=int(box.x), pad_top=int(box.y), valign="top", halign="left")
-
-#         box = self.precip_node.get_box(relative=False)
-#         self.rect(
-#             (0, 0, 32),
-#             int(box.x), int(box.y),
-#             int(box.width), int(box.height),
-#         )
-#         self.draw_text((200, 200, 200), self.precip_text(), pad_left=int(box.x), pad_top=int(box.y), valign="top", halign="left")
-
-#         box = self.time_node.get_box(relative=False)
-#         self.rect(
-#             (0, 32, 0),
-#             int(box.x), int(box.y),
-#             int(box.width), int(box.height),
-#         )
-#         self.draw_text((200, 200, 200), self.time_text(), pad_left=int(box.x), pad_top=int(box.y), valign="top", halign="left")
-        
-#         # self.draw_forecast(data)
-
-#     # def draw_forecast(self, forecast: WeatherForecast) -> None:
-#     #     if forecast.datetime is None:
-#     #         return
-
-#     #     time_text = forecast.datetime.astimezone(self.display_tz).strftime("%-I%p")
-#     #     if time_text.endswith("M"): # PM/AM -> P/A; no strftime option for that
-#     #         time_text = time_text[:-1]
-#     #     if time_text.endswith("P") or time_text.endswith("A"): # lowercase this
-#     #         time_text = time_text[:-1] + time_text[-1].lower()
-#     #     self.draw_text(
-#     #         (200, 200, 200),
-#     #         time_text,
-#     #         valign="top",
-#     #     )
-
-#     #     if forecast.temperature_high is not None:
-#     #         self.draw_text(
-#     #             (200, 200, 200),
-#     #             f"{forecast.temperature_high:.0f}°",
-#     #             valign="middle",
-#     #         )
-
-#     #     if forecast.precipitation is not None and forecast.precipitation > 0:
-#     #         self.draw_text(
-#     #             (200, 200, 200),
-#     #             f"{forecast.precipitation:.0f}mm",
-#     #             valign="bottom",
-#     #         )
+        def get_text(self) -> str:
+            forecast = self.hwparent.get_forecast()
+            if forecast is None:
+                return "N/A"
+            if forecast.precipitation is None or forecast.precipitation == 0:
+                return ""
+            if forecast.precipitation < 1:
+                return "<1mm"
+            return f"{forecast.precipitation:.0f}mm"
