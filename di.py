@@ -110,12 +110,11 @@ def create_clock(config: AppConfig) -> Clock:
     )
     data_resolvers.append(timer_data)
 
-    # # Create components
+    # Create components
     time_component = TimeComponent(
         font_path=config.font_path,
         current_time=current_time,
     )
-    # current_position = (0, 0, 29, 13)
     current_temperature_component = CurrentTemperatureComponent(
         data_resolver=current_weather,
         font_path=config.font_path,
