@@ -1,11 +1,16 @@
 from PIL import Image, ImageDraw
 from stretchable import Node
+from stretchable.style import AlignItems
 from typing import TypeVar, Any
 
 class Drawable(Node):
     def __init__(self, **kwargs: Any) -> None:
         self.buffer: Image.Image | None = None
         self.imagedraw = ImageDraw.Draw(Image.new("RGBA", (1, 1))) # FIXME: typing hack
+        if "flex_grow" not in kwargs:
+            kwargs["flex_grow"] = 1
+        if "align_items" not in kwargs:
+            kwargs["align_items"] = AlignItems.STRETCH
         super().__init__(**kwargs)
 
     def verify_layout_is_clean(self) -> None:

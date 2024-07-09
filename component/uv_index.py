@@ -1,11 +1,11 @@
 from data import DataResolver, CurrentWeatherData
 from draw import TextNode, CarouselPanel, ContainerNode, BarChart
-from stretchable.style import AlignItems
+from stretchable.style import JustifyContent
 from typing import Any
 
 class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
     def __init__(self, data_resolver: DataResolver[CurrentWeatherData], font_path: str) -> None:
-        super().__init__(align_items=AlignItems.CENTER)
+        super().__init__() # justify_content=JustifyContent.CENTER)
         self.data_resolver = data_resolver
         self.add_child(self.UvTextComponent(data_resolver, font_path))
         self.add_child(self.UvGraphComponent(data_resolver, margin=2))

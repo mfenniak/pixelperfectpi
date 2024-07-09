@@ -267,7 +267,7 @@ def create_clock(config: AppConfig) -> Clock:
     top = ContainerNode(
         flex_direction=FlexDirection.ROW,
         justify_content=JustifyContent.SPACE_BETWEEN,
-        align_items=AlignItems.CENTER,
+        # align_items=AlignItems.CENTER,
     )
     top.add_child(top_left)
     top.add_child(time_component)
@@ -275,7 +275,7 @@ def create_clock(config: AppConfig) -> Clock:
     bottom = CarouselDrawable(
         current_time=current_time,
         flex_grow=1,
-        align_items=AlignItems.CENTER,
+        # align_items=AlignItems.CENTER,
     )
     for calendar in calendars:
         bottom.add_panel(calendar)
@@ -296,7 +296,7 @@ def create_clock(config: AppConfig) -> Clock:
         size=(100*PCT, 100*PCT),
         flex_direction=FlexDirection.COLUMN,
         justify_content=JustifyContent.CENTER,
-        align_items=AlignItems.STRETCH,
+        # align_items=AlignItems.STRETCH,
     )
     root.add_child(top)
     root.add_child(bottom)
