@@ -1,11 +1,15 @@
 from data import DataResolver, CurrentWeatherData
 from draw import TextNode, CarouselPanel, ContainerNode, BarChart
-from stretchable.style import JustifyContent
+from stretchable.style import JustifyContent, AlignItems
 from typing import Any
 
 class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
-    def __init__(self, data_resolver: DataResolver[CurrentWeatherData], font_path: str) -> None:
-        super().__init__() # justify_content=JustifyContent.CENTER)
+    def __init__(self, data_resolver: DataResolver[CurrentWeatherData], font_path: str, **kwargs: Any) -> None:
+        super().__init__(
+            justify_content=JustifyContent.CENTER,
+            align_items=AlignItems.CENTER,
+            **kwargs
+        )
         self.data_resolver = data_resolver
         self.add_child(self.UvTextComponent(data_resolver, font_path))
         self.add_child(self.UvGraphComponent(data_resolver, margin=2))
@@ -19,7 +23,12 @@ class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
 
     class UvTextComponent(TextNode):
         def __init__(self, data_resolver: DataResolver[CurrentWeatherData], font_path: str) -> None:
-            super().__init__(font="4x6", font_path=font_path)
+            super().__init__(
+                font="4x6",
+                font_path=font_path,
+                flex_grow=0,
+                # debug_border=(128, 0, 0),
+            )
             self.data_resolver = data_resolver
 
         def get_background_color(self) -> tuple[int, int, int]:
@@ -35,7 +44,15 @@ class CurrentUvIndexComponent(ContainerNode, CarouselPanel):
 
     class UvGraphComponent(BarChart):
         def __init__(self, data_resolver: DataResolver[CurrentWeatherData], **kwargs: Any) -> None:
-            super().__init__(orientation="vertical", size=(5, 12), border=1, border_color=(19, 19, 15), **kwargs)
+            super().__init__(
+                orientation="vertical",
+                size=(5, 12),
+                border=1,
+                border_color=(19, 19, 15),
+                flex_grow=0,
+                # debug_border=(0, 128, 0),
+                **kwargs
+            )
             self.data_resolver = data_resolver
 
         def min_value(self) -> float:

@@ -122,6 +122,7 @@ def create_clock(config: AppConfig) -> Clock:
     uv_index_component = CurrentUvIndexComponent(
         data_resolver=current_weather,
         font_path=config.font_path,
+        # debug_border=(255, 0, 0),
     )
     day_of_week_component = DayOfWeekComponent(
         font_path=config.font_path,

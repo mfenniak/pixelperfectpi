@@ -4,9 +4,10 @@ from stretchable.style import AlignItems
 from typing import TypeVar, Any
 
 class Drawable(Node):
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, debug_border: tuple[int, int, int] | None = None, **kwargs: Any) -> None:
         self.buffer: Image.Image | None = None
         self.imagedraw = ImageDraw.Draw(Image.new("RGBA", (1, 1))) # FIXME: typing hack
+        self.debug_border = debug_border
         if "flex_grow" not in kwargs:
             kwargs["flex_grow"] = 1
         if "align_items" not in kwargs:
@@ -30,6 +31,8 @@ class Drawable(Node):
             self.imagedraw = ImageDraw.Draw(self.buffer)
 
         self.do_draw()
+        if self.debug_border is not None:
+            self.imagedraw.rectangle((0, 0, box.width-1, box.height-1), outline=self.debug_border)
         parent_buffer.paste(self.buffer, box=(int(box.x), int(box.y)))
 
     def fill(self, color: tuple[int, int, int] | tuple[int, int, int, int]) -> None:
