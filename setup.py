@@ -14,6 +14,7 @@ setup(
         'component/dayofweek',
         'component/distance',
         'component/door',
+        'component/labeledtime',
         'component/media_player',
         'component/oven',
         'component/sunforecast',

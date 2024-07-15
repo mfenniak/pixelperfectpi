@@ -6,6 +6,7 @@ from component.currenttemp import CurrentTemperatureComponent
 from component.dayofweek import DayOfWeekComponent
 from component.distance import DistanceComponent
 from component.door import DoorComponent
+from component.labeledtime import LabeledTimeComponent
 from component.media_player import MediaPlayerComponent
 from component.oven import OvenOnComponent
 from component.time import TimeComponent
@@ -127,6 +128,12 @@ def create_clock(config: AppConfig) -> Clock:
     day_of_week_component = DayOfWeekComponent(
         font_path=config.font_path,
         current_time=current_time,
+    )
+    home_time_component = LabeledTimeComponent(
+        font_path=config.font_path,
+        current_time=current_time,
+        display_tz=pytz.timezone("America/Edmonton"),
+        label="Home",
     )
 
     # aqi_component = providers.Singleton(
@@ -292,6 +299,7 @@ def create_clock(config: AppConfig) -> Clock:
     bottom.add_panel(oven_component)
     bottom.add_panel(paris_component)
     bottom.add_panel(timer_component)
+    bottom.add_panel(home_time_component)
 
     root = ContainerNode(
         size=(100*PCT, 100*PCT),
