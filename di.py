@@ -97,7 +97,7 @@ def create_clock(config: AppConfig) -> Clock:
     garage_man_door_status_data = DoorDataResolver(
         topic="homeassistant/output/door/garage_man_door",
     )
-    data_resolvers.append(garage_man_door_status_data) 
+    data_resolvers.append(garage_man_door_status_data)
     back_door_status_data = DoorDataResolver(
         topic="homeassistant/output/door/back_door",
     )
@@ -129,12 +129,12 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         current_time=current_time,
     )
-    home_time_component = LabeledTimeComponent(
-        font_path=config.font_path,
-        current_time=current_time,
-        display_tz=pytz.timezone("America/Edmonton"),
-        label="Home",
-    )
+    # home_time_component = LabeledTimeComponent(
+    #     font_path=config.font_path,
+    #     current_time=current_time,
+    #     display_tz=pytz.timezone("America/Edmonton"),
+    #     label="Home",
+    # )
 
     # aqi_component = providers.Singleton(
     #     AqiComponent,
@@ -226,13 +226,13 @@ def create_clock(config: AppConfig) -> Clock:
         font_path=config.font_path,
         icon_path=config.icon_path,
     )
-    paris_component = CountdownComponent(
-        current_time=current_time,
-        target_date=pytz.timezone("Europe/Paris").localize(datetime.datetime(2024, 6, 28, 13, 3, 0)),
-        count_direction=CountDirection.UP,
-        font_path=config.font_path,
-        icon_path=config.icon_path,
-    )
+    # paris_component = CountdownComponent(
+    #     current_time=current_time,
+    #     target_date=pytz.timezone("Europe/Paris").localize(datetime.datetime(2024, 6, 28, 13, 3, 0)),
+    #     count_direction=CountDirection.UP,
+    #     font_path=config.font_path,
+    #     icon_path=config.icon_path,
+    # )
 
     # RGB Matrix initialization
     if config.mode == "real":
@@ -297,9 +297,9 @@ def create_clock(config: AppConfig) -> Clock:
     bottom.add_panel(door_component_man)
     bottom.add_panel(media_player_component)
     bottom.add_panel(oven_component)
-    bottom.add_panel(paris_component)
+    # bottom.add_panel(paris_component)
     bottom.add_panel(timer_component)
-    bottom.add_panel(home_time_component)
+    # bottom.add_panel(home_time_component)
 
     root = ContainerNode(
         size=(100*PCT, 100*PCT),
