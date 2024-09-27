@@ -34,7 +34,7 @@ def load_config() -> AppConfig:
             latitude=float(os.environ.get("LATITUDE", 51.036476342750326)),
             longitude=float(os.environ.get("LONGITUDE", -114.1045886332063))
         ),
-        weather_mqtt_topic=os.environ.get("WEATHER_MQTT_TOPIC", "homeassistant/output/weather/Calgary")
+        weather_mqtt_topic=os.environ.get("WEATHER_MQTT_TOPIC", "homeassistant/output/weather/Home")
     )
 
 def main(config: AppConfig) -> None:
