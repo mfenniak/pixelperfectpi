@@ -1,5 +1,5 @@
-# from component.aqi import AqiComponent
-# from component.sunforecast import SunForecastComponent
+from component.aqi import AqiComponent
+from component.sunforecast import SunForecastComponent
 from component.calendar import CalendarComponent
 from component.countdown import CountdownComponent, CountDirection
 from component.currenttemp import CurrentTemperatureComponent
@@ -110,6 +110,8 @@ def create_clock(config: AppConfig) -> Clock:
         topic="homeassistant/output/timer/kitchen",
     )
     data_resolvers.append(timer_data)
+    purpleair = PurpleAirDataResolver(url=config.purpleair_url)
+    data_resolvers.append(purpleair)
 
     # Create components
     time_component = TimeComponent(
@@ -136,12 +138,10 @@ def create_clock(config: AppConfig) -> Clock:
     #     label="Home",
     # )
 
-    # aqi_component = providers.Singleton(
-    #     AqiComponent,
-    #     purpleair=purpleair,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    # )
+    aqi_component = AqiComponent(
+        purpleair=purpleair,
+        font_path=config.font_path,
+    )
     calendars = []
     for i in range(3):
         calendars.append(CalendarComponent(
@@ -172,8 +172,7 @@ def create_clock(config: AppConfig) -> Clock:
         display_tz=display_tz,
         font_path=config.font_path,
     )
-    # sun_forecast_component = providers.Singleton(
-    #     SunForecastComponent,
+    # sun_forecast_component = SunForecastComponent(
     #     env_canada=env_canada,
     #     box=lower_position_inner,
     #     font_path=config.font_path,
@@ -287,9 +286,11 @@ def create_clock(config: AppConfig) -> Clock:
     )
     for calendar in calendars:
         bottom.add_panel(calendar)
+    bottom.add_panel(aqi_component)
     bottom.add_panel(daily_weather_forecast_component_today)
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
     bottom.add_panel(hourly_weather_forecast_component)
+    # bottom.add_panel(sun_forecast_component)
     bottom.add_panel(distance_component_amanda)
     bottom.add_panel(distance_component_mathieu)
     bottom.add_panel(door_component_back)
