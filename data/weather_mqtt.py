@@ -9,6 +9,12 @@ from typing import Any, Dict
 import datetime
 import json
 
+def translate_condition(cond: str | None) -> str | None:
+    if cond is not None:
+        if cond.lower() == "partlycloudy":
+            return "Partly Cloudy"
+    return cond
+
 class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessageReceiver):
     def __init__(self, topic: str) -> None:
         self.data = CurrentWeatherData(
@@ -40,7 +46,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
     def parse_weather_data(self, data: Dict[str, Any]) -> CurrentWeatherData:
         current = data['current']
         return CurrentWeatherData(
-            condition=current.get('condition'),
+            condition=translate_condition(current.get('condition')),
             temperature=current.get('temperature'),
             humidity=current.get('humidity'),
             pressure=current.get('pressure'),
@@ -88,7 +94,7 @@ class WeatherForecastDataMqttResolver(DataResolver[WeatherForecasts], MqttMessag
 
     def parse_weather_forecast(self, data: Dict[str, Any]) -> WeatherForecast:
         return WeatherForecast(
-            condition=data.get('condition'),
+            condition=translate_condition(data.get('condition')),
             datetime=self.parse_datetime(data.get('datetime')),
             humidity=data.get('humidity'),
             pressure=data.get('pressure'),
