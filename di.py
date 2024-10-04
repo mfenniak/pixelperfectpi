@@ -1,5 +1,4 @@
 from component.aqi import AqiComponent
-from component.sunforecast import SunForecastComponent
 from component.calendar import CalendarComponent
 from component.countdown import CountdownComponent, CountDirection
 from component.currenttemp import CurrentTemperatureComponent
@@ -9,6 +8,7 @@ from component.door import DoorComponent
 from component.labeledtime import LabeledTimeComponent
 from component.media_player import MediaPlayerComponent
 from component.oven import OvenOnComponent
+from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
 from component.uv_index import CurrentUvIndexComponent
@@ -61,6 +61,8 @@ def create_clock(config: AppConfig) -> Clock:
 
     # Create data resolvers
     data_resolvers: List[DataResolver[Any]] = []
+    env_canada = EnvironmentCanadaDataResolver()
+    data_resolvers.append(env_canada)
     current_time = CurrentTimeDataResolver()
     data_resolvers.append(current_time)
     current_weather = CurrentWeatherDataMqttResolver(
@@ -125,7 +127,6 @@ def create_clock(config: AppConfig) -> Clock:
     uv_index_component = CurrentUvIndexComponent(
         data_resolver=current_weather,
         font_path=config.font_path,
-        # debug_border=(255, 0, 0),
     )
     day_of_week_component = DayOfWeekComponent(
         font_path=config.font_path,
@@ -150,21 +151,17 @@ def create_clock(config: AppConfig) -> Clock:
             calendar_index=i,
             font_path=config.font_path,
             display_tz=display_tz,
-            # flex_grow=1,
-            # align_self=AlignSelf.STRETCH,
         ))
     daily_weather_forecast_component_today = DailyWeatherForecastComponent(
         weather_forecast_data=weather_forecast_data,
         offset=datetime.timedelta(days=0),
         label="tdy",
-        # box=lower_position_inner,
         font_path=config.font_path,
     )
     daily_weather_forecast_component_tomorrow = DailyWeatherForecastComponent(
         weather_forecast_data=weather_forecast_data,
         offset=datetime.timedelta(days=1),
         label="tmw",
-        # box=lower_position_inner,
         font_path=config.font_path,
     )
     hourly_weather_forecast_component = HourlyWeatherForecastComponent(
@@ -172,12 +169,11 @@ def create_clock(config: AppConfig) -> Clock:
         display_tz=display_tz,
         font_path=config.font_path,
     )
-    # sun_forecast_component = SunForecastComponent(
-    #     env_canada=env_canada,
-    #     box=lower_position_inner,
-    #     font_path=config.font_path,
-    #     display_tz=display_tz,
-    # )
+    sun_forecast_component = SunForecastComponent(
+        sun_forecast=env_canada,
+        font_path=config.font_path,
+        display_tz=display_tz,
+    )
     oven_component = OvenOnComponent(
         oven_on=oven_on_data,
         font_path=config.font_path,
@@ -274,7 +270,6 @@ def create_clock(config: AppConfig) -> Clock:
     top = ContainerNode(
         flex_direction=FlexDirection.ROW,
         justify_content=JustifyContent.SPACE_BETWEEN,
-        # align_items=AlignItems.CENTER,
     )
     top.add_child(top_left)
     top.add_child(time_component)
@@ -282,7 +277,6 @@ def create_clock(config: AppConfig) -> Clock:
     bottom = CarouselDrawable(
         current_time=current_time,
         flex_grow=1,
-        # align_items=AlignItems.CENTER,
     )
     for calendar in calendars:
         bottom.add_panel(calendar)
@@ -290,7 +284,7 @@ def create_clock(config: AppConfig) -> Clock:
     bottom.add_panel(daily_weather_forecast_component_today)
     bottom.add_panel(daily_weather_forecast_component_tomorrow)
     bottom.add_panel(hourly_weather_forecast_component)
-    # bottom.add_panel(sun_forecast_component)
+    bottom.add_panel(sun_forecast_component)
     bottom.add_panel(distance_component_amanda)
     bottom.add_panel(distance_component_mathieu)
     bottom.add_panel(door_component_back)
@@ -306,7 +300,6 @@ def create_clock(config: AppConfig) -> Clock:
         size=(100*PCT, 100*PCT),
         flex_direction=FlexDirection.COLUMN,
         justify_content=JustifyContent.CENTER,
-        # align_items=AlignItems.STRETCH,
     )
     root.add_child(top)
     root.add_child(bottom)
