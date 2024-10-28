@@ -123,6 +123,7 @@ Although this is a typicalish Python application, I've deployed it on my Raspber
 
   systemd.services.pixelperfectpi = {
     description = "pixelperfectpi";
+    wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {

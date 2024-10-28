@@ -17,7 +17,7 @@ class TextNode(Drawable):
         # Before drawing, a chance to mark ourselves as dirty if our
         # requirements have changed (typically due to data resolver's data
         # change)
-        text = self.get_text()
+        text = self.inner_get_text()
         if len(text) != len(self.last_text):
             # It's slightly wrong to not recompute layout on every text
             # change... since the text could have different width... but it's a
@@ -29,6 +29,12 @@ class TextNode(Drawable):
     def get_text(self) -> str:
         raise NotImplemented
 
+    def inner_get_text(self) -> str:
+        # PIL fonts are only going to work in latin-1... so just a quick drop of anything that doesn't work
+        text = self.get_text()
+        text = text.encode('latin-1', errors='ignore').decode('latin-1')
+        return text
+
     def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
         return (0, 0, 0)
 
@@ -37,10 +43,10 @@ class TextNode(Drawable):
 
     def do_draw(self) -> None:
         self.fill(self.get_background_color())
-        self.draw_text(self.get_text_color(), self.get_text())
+        self.draw_text(self.get_text_color(), self.inner_get_text())
 
     def measure_node(self, size_points: SizePoints, size_available_space: SizeAvailableSpace) -> SizePoints:
-        text = self.get_text()
+        text = self.inner_get_text()
         if text == "":
             return SizePoints(LengthPoints.points(0), LengthPoints.points(0))
 
@@ -52,7 +58,7 @@ class TextNode(Drawable):
             max_width = 1
         else:
             max_width = 1024
-        
+
         (width, height) = self.measure_text(text, max_width)
 
         # print(f"measure_node, text={text}, returning {width=}, {height=}")
@@ -101,7 +107,7 @@ class TextNode(Drawable):
             if proposed_line != "":
                 proposed_line += " "
             proposed_line += next_word
-            
+
             # will "proposed_line" fit onto a line?
             (left, top, right, bottom) = self.measuring_imagedraw.multiline_textbbox((0, 0), proposed_line, font=self.pil_font, spacing=0, align="left")
             if right > max_width:
@@ -185,7 +191,7 @@ class TextNode(Drawable):
             if proposed_line != "":
                 proposed_line += " "
             proposed_line += next_word
-            
+
             # will "proposed_line" fit onto a line?
             (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), proposed_line, font=self.pil_font, spacing=0, align="left")
             if right > (w - pad_left):
@@ -276,7 +282,7 @@ class TextNode(Drawable):
 #         self.buffer.putpixel((x, y), color)
 
 #     def draw_icon(self,
-#         icon: Image.Image, 
+#         icon: Image.Image,
 #         halign: Literal["center"] | Literal["left"] | Literal["right"]="left",
 #         valign: Literal["top"] | Literal["middle"] | Literal["bottom"]="middle") -> None:
 #         dest = (0, 0)
@@ -327,7 +333,7 @@ class TextNode(Drawable):
 #             if proposed_line != "":
 #                 proposed_line += " "
 #             proposed_line += next_word
-            
+
 #             # will "proposed_line" fit onto a line?
 #             (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), proposed_line, font=self.pil_font, spacing=0, align="left")
 #             if right > max_width:
@@ -406,7 +412,7 @@ class TextNode(Drawable):
 #             if proposed_line != "":
 #                 proposed_line += " "
 #             proposed_line += next_word
-            
+
 #             # will "proposed_line" fit onto a line?
 #             (left, top, right, bottom) = self.imagedraw.multiline_textbbox((0, 0), proposed_line, font=self.pil_font, spacing=0, align="left")
 #             if right > (self.w - pad_left):
