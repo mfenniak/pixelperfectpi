@@ -6,16 +6,17 @@ import datetime
 import pytz
 
 class DailyWeatherForecastComponent(TextNode, CarouselPanel):
-    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], offset: datetime.timedelta, label: str, font_path: str, **kwargs: Any) -> None:
+    def __init__(self, weather_forecast_data: DataResolver[WeatherForecasts], offset: datetime.timedelta, display_tz: pytz.BaseTzInfo, label: str, font_path: str, **kwargs: Any) -> None:
         super().__init__(font="4x6", font_path=font_path, flex_grow=1, **kwargs)
         self.weather_forecast_data = weather_forecast_data
         self.offset = offset
         self.label = label
+        self.display_tz = display_tz
 
     def get_forecast(self, data: WeatherForecasts | None) -> WeatherForecast | None:
         if data is None:
             return None
-        now = datetime.datetime.now(tz=pytz.utc)
+        now = datetime.datetime.now(tz=self.display_tz)
         for day in data.daily:
             if day.datetime is None:
                 continue
@@ -83,7 +84,7 @@ def interpolate_color(temp: float) -> tuple[int, int, int]:
         (30, (255, 255, 0)),   # Yellow
         (40, (255, 0, 0))      # Red
     ]
-    
+
     # Find the two thresholds that the current temp lies between
     for i in range(len(thresholds) - 1):
         if thresholds[i][0] <= temp <= thresholds[i+1][0]:
@@ -96,13 +97,13 @@ def interpolate_color(temp: float) -> tuple[int, int, int]:
             return thresholds[0][1]
         else:
             return thresholds[-1][1]
-    
+
     # Perform linear interpolation between the two color thresholds
     factor = (temp - lower_temp) / (upper_temp - lower_temp)
     r = int(lower_color[0] + (upper_color[0] - lower_color[0]) * factor)
     g = int(lower_color[1] + (upper_color[1] - lower_color[1]) * factor)
     b = int(lower_color[2] + (upper_color[2] - lower_color[2]) * factor)
-    
+
     return (r, g, b)
 
 
@@ -136,7 +137,7 @@ class HourlyWeatherForecastSingleHourPanel(ContainerNode, CarouselPanel):
             if hour.datetime is None:
                 continue
             hour_time = hour.datetime.astimezone(self.display_tz)
-            # print(f"\tFound {hour_time}...") 
+            # print(f"\tFound {hour_time}...")
             if hour_time.date() == target_time.date() and hour_time.hour == target_time.hour:
                 # print("\tThat works!")
                 return hour
@@ -191,7 +192,7 @@ class HourlyWeatherForecastSingleHourPanel(ContainerNode, CarouselPanel):
         def __init__(self, hwparent: "HourlyWeatherForecastSingleHourPanel") -> None:
             super().__init__(font="4x6", font_path=hwparent.font_path)
             self.hwparent = hwparent
-        
+
         def get_background_color(self) -> tuple[int, int, int, int] | tuple[int, int, int]:
             return self.hwparent.background_color
 

@@ -155,12 +155,14 @@ def create_clock(config: AppConfig) -> Clock:
     daily_weather_forecast_component_today = DailyWeatherForecastComponent(
         weather_forecast_data=weather_forecast_data,
         offset=datetime.timedelta(days=0),
+        display_tz=display_tz,
         label="tdy",
         font_path=config.font_path,
     )
     daily_weather_forecast_component_tomorrow = DailyWeatherForecastComponent(
         weather_forecast_data=weather_forecast_data,
         offset=datetime.timedelta(days=1),
+        display_tz=display_tz,
         label="tmw",
         font_path=config.font_path,
     )
