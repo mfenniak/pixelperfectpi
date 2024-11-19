@@ -141,9 +141,12 @@ class MqttServer(Service):
                 else:
                     message_handled = False
                     for other_receiver in self.other_receivers:
-                        if await other_receiver.handle_message(message):
-                            message_handled = True
-                            # Do not break; allow multiple receivers to handle the same message
+                        try:
+                            if await other_receiver.handle_message(message):
+                                message_handled = True
+                                # Do not break; allow multiple receivers to handle the same message
+                        except Exception as exc:
+                            raise RuntimeError(f"failed in handle_message from receiver {other_receiver}") from exc
                     if not message_handled:
                         print("Unknown message", message.topic, message.payload)
                 # this is correct, but create_task types are wrong? https://github.com/python/typeshed/issues/10185

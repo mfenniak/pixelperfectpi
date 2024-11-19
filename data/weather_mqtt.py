@@ -45,6 +45,12 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
 
     def parse_weather_data(self, data: Dict[str, Any]) -> CurrentWeatherData:
         current = data['current']
+        uv = current.get('uv')
+        if isinstance(uv, str):
+            try:
+                uv = float(uv)
+            except ValueError:
+                uv = 0
         return CurrentWeatherData(
             condition=translate_condition(current.get('condition')),
             temperature=current.get('temperature'),
@@ -52,7 +58,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
             pressure=current.get('pressure'),
             wind_bearing=current.get('wind_bearing'),
             wind_speed=current.get('wind_speed'),
-            uv=current.get('uv'),
+            uv=uv,
         )
 
 class WeatherForecastDataMqttResolver(DataResolver[WeatherForecasts], MqttMessageReceiver):

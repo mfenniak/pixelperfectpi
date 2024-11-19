@@ -33,7 +33,7 @@ action:
             "pressure": {{ state_attr('weather.suresnes', 'pressure') if state_attr('weather.suresnes', 'pressure') is not none else 'null' }},
             "wind_bearing": {{ state_attr('weather.suresnes', 'wind_bearing') if state_attr('weather.suresnes', 'wind_bearing') is not none else 'null' }},
             "wind_speed": {{ state_attr('weather.suresnes', 'wind_speed') if state_attr('weather.suresnes', 'wind_speed') is not none else 'null' }},
-            "uv": {{ states.sensor.suresnes_uv.state }}
+            "uv": "{{ states.sensor.suresnes_uv.state }}"
           },
           "forecasts": {
             "daily": {{ daily['weather.suresnes'].forecast|tojson }},
