@@ -48,7 +48,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
         uv = current.get('uv')
         if isinstance(uv, str):
             try:
-                uv = float(uv)
+                uv = int(uv)
             except ValueError:
                 uv = 0
         return CurrentWeatherData(
