@@ -22,6 +22,7 @@ setup(
         'component/timer',
         'component/uv_index',
         'component/weatherforecast',
+        'component/windchill_index',
         'data/__init__',
         'data/calendar',
         'data/currenttime',
