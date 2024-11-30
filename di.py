@@ -12,6 +12,7 @@ from component.sunforecast import SunForecastComponent
 from component.time import TimeComponent
 from component.timer import TimerComponent
 from component.uv_index import CurrentUvIndexComponent
+from component.windchill_index import CurrentWindChillIndexComponent
 from component.weatherforecast import DailyWeatherForecastComponent, HourlyWeatherForecastComponent
 from config import AppConfig
 from data import DataResolver
@@ -124,7 +125,11 @@ def create_clock(config: AppConfig) -> Clock:
         data_resolver=current_weather,
         font_path=config.font_path,
     )
-    uv_index_component = CurrentUvIndexComponent(
+    # uv_index_component = CurrentUvIndexComponent(
+    #     data_resolver=current_weather,
+    #     font_path=config.font_path,
+    # )
+    wc_index_component = CurrentWindChillIndexComponent(
         data_resolver=current_weather,
         font_path=config.font_path,
     )
@@ -268,7 +273,8 @@ def create_clock(config: AppConfig) -> Clock:
     top_left = CarouselDrawable(current_time=current_time)
     top_left.add_panel(day_of_week_component)
     top_left.add_panel(current_temperature_component)
-    top_left.add_panel(uv_index_component)
+    # top_left.add_panel(uv_index_component)
+    top_left.add_panel(wc_index_component)
     top = ContainerNode(
         flex_direction=FlexDirection.ROW,
         justify_content=JustifyContent.SPACE_BETWEEN,

@@ -13,6 +13,7 @@ class CurrentWeatherData:
     wind_bearing: None | int
     wind_speed: None | float # km/h
     uv: None | int # UV index
+    wind_chill: None | float # wind-chill index, in equivilant Celsius
 
 @dataclass
 class WeatherForecast:

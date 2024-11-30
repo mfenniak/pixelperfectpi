@@ -15,6 +15,10 @@ def translate_condition(cond: str | None) -> str | None:
             return "Partly Cloudy"
     return cond
 
+# Environment Canada's wind chill calculation, based upon temperatures in deg-C and wind speed in km/h
+def wind_chill(air_temperature: float, wind_speed: float) -> float:
+    return float(13.12 + (0.6215 * air_temperature) - (11.37 * (wind_speed ** 0.16)) + (0.3965 * air_temperature * (wind_speed ** 0.16)))
+
 class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessageReceiver):
     def __init__(self, topic: str) -> None:
         self.data = CurrentWeatherData(
@@ -25,6 +29,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
             wind_bearing=None,
             wind_speed=None,
             uv=None,
+            wind_chill=None,
         )
         self.topic = topic
 
@@ -45,6 +50,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
 
     def parse_weather_data(self, data: Dict[str, Any]) -> CurrentWeatherData:
         current = data['current']
+        wc = wind_chill(current.get('temperature'), current.get('wind_speed'))
         uv = current.get('uv')
         if isinstance(uv, str):
             try:
@@ -59,6 +65,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
             wind_bearing=current.get('wind_bearing'),
             wind_speed=current.get('wind_speed'),
             uv=uv,
+            wind_chill=wc,
         )
 
 class WeatherForecastDataMqttResolver(DataResolver[WeatherForecasts], MqttMessageReceiver):
@@ -115,22 +122,3 @@ class WeatherForecastDataMqttResolver(DataResolver[WeatherForecasts], MqttMessag
         if dt is None:
             return None
         return datetime.datetime.fromisoformat(dt)
-
-        # # Create list of forecasts
-        # daily_forecasts = []
-        # for forecast in forecasts:
-        #     forecast_data = {
-        #         'condition': forecast['condition'],
-        #         'datetime': forecast['datetime'],
-        #         'humidity': forecast['humidity'],
-        #         'precipitation': forecast['precipitation'],
-        #         'temperature': forecast['temperature'],
-        #         'templow': forecast.get('templow', None)  # templow may not be present
-        #     }
-        #     daily_forecasts.append(forecast_data)
-
-        # # Return structured data
-        # return {
-        #     'current': current_weather,
-        #     'forecasts': daily_forecasts
-        # }
