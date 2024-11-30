@@ -17,6 +17,9 @@ def translate_condition(cond: str | None) -> str | None:
 
 # Environment Canada's wind chill calculation, based upon temperatures in deg-C and wind speed in km/h
 def wind_chill(air_temperature: float, wind_speed: float) -> float:
+    if wind_speed < 4.8 or air_temperature > -10.0:
+        # wind chill isn't "defined" in these conditions
+        return air_temperature
     return float(13.12 + (0.6215 * air_temperature) - (11.37 * (wind_speed ** 0.16)) + (0.3965 * air_temperature * (wind_speed ** 0.16)))
 
 class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessageReceiver):
