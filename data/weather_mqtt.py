@@ -51,6 +51,12 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
     def parse_weather_data(self, data: Dict[str, Any]) -> CurrentWeatherData:
         current = data['current']
         wc = wind_chill(current.get('temperature'), current.get('wind_speed'))
+        uv = current.get('uv')
+        if isinstance(uv, str):
+            try:
+                uv = int(uv)
+            except ValueError:
+                uv = 0
         return CurrentWeatherData(
             condition=translate_condition(current.get('condition')),
             temperature=current.get('temperature'),
@@ -58,7 +64,7 @@ class CurrentWeatherDataMqttResolver(DataResolver[CurrentWeatherData], MqttMessa
             pressure=current.get('pressure'),
             wind_bearing=current.get('wind_bearing'),
             wind_speed=current.get('wind_speed'),
-            uv=current.get('uv'),
+            uv=uv,
             wind_chill=wc,
         )
 
@@ -116,22 +122,3 @@ class WeatherForecastDataMqttResolver(DataResolver[WeatherForecasts], MqttMessag
         if dt is None:
             return None
         return datetime.datetime.fromisoformat(dt)
-
-        # # Create list of forecasts
-        # daily_forecasts = []
-        # for forecast in forecasts:
-        #     forecast_data = {
-        #         'condition': forecast['condition'],
-        #         'datetime': forecast['datetime'],
-        #         'humidity': forecast['humidity'],
-        #         'precipitation': forecast['precipitation'],
-        #         'temperature': forecast['temperature'],
-        #         'templow': forecast.get('templow', None)  # templow may not be present
-        #     }
-        #     daily_forecasts.append(forecast_data)
-
-        # # Return structured data
-        # return {
-        #     'current': current_weather,
-        #     'forecasts': daily_forecasts
-        # }
