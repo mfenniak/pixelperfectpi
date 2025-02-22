@@ -38,7 +38,11 @@ class DailyWeatherForecastComponent(TextNode, CarouselPanel):
         if forecast is None:
             return "N/A"
         cond = forecast.condition.capitalize() if forecast.condition is not None else "Unknown"
-        txt = f"{self.label}: {cond} H:{forecast.temperature_high:.0f}° L:{forecast.temperature_low:.0f}°"
+        txt = f"{self.label}: {cond}"
+        if forecast.temperature_high is not None:
+            txt += f" H:{forecast.temperature_high:.0f}°"
+        if forecast.temperature_low is not None:
+            txt += f" L:{forecast.temperature_low:.0f}°"
         if forecast.precipitation is not None and forecast.precipitation > 0:
             if forecast.precipitation < 1:
                 txt += " <1mm"
