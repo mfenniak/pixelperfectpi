@@ -1,3 +1,7 @@
+> [!IMPORTANT]  
+> This repository is archived.  The active project has been moved to [https://forgejo.kainnef.com/mfenniak/pixelperfectpi](https://forgejo.kainnef.com/mfenniak/pixelperfectpi)
+
+
 # pixelperfectpi
 
 pixelperfectpi is an application for the Raspberry Pi that drives an LED matrix panel in order to create a custom digital clock.
